@@ -69,7 +69,7 @@ upp = 2*dt*V + u
 
 #Axes3D.plot_surface(list(u))
 
-X,Y = meshgrid(linspace(xstart,xstop,Nx+2),linspace(ystart,ystop,Ny+2))
+
 for i in xrange(Nt):
     for i in xrange(1,Nx):
         for j in xrange(1,Ny):
@@ -82,10 +82,10 @@ for i in xrange(Nt):
     u[:,0] = u[:,1].copy()
     u[-1,:] = u[-2,:].copy()
     u[:,-1] = u[:,-2].copy()
-    s = mlab.mesh(X,Y,u)
+
     upp = up.copy()
     up = u.copy()
-
-
-#mlab.show()
+X,Y = meshgrid(linspace(xstart,xstop,Nx+2),linspace(ystart,ystop,Ny+2))
+s = mlab.mesh(X,Y,u)
+mlab.show()
 
