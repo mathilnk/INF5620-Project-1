@@ -1,9 +1,9 @@
 """
-Solves the 2.dim wave-equation with dampening. Commandline arguments are 
+Solves the 2.dim wave-equation with dampening. Commandline arguments are upper time limit T, Nx,Lx
 """
 from numpy import *
 from math import *
-import sys, os, time
+import sys, os, time, math
 #import matplotlib.pyplot as plt
 from scitools.std import *
 from mayavi import mlab
@@ -32,7 +32,7 @@ def initial(x,y):
 	"""
 	Returns the initial shape of the wave
 	"""
-	return exp(-(((x-x_0)/(2*sigma_x))**2+((y-y_0)/(2*sigma_y))**2))
+	return math.exp(-0.5*(((x-x_0)/(sigma_x))**2+((y-y_0)/(sigma_y))**2))
 
 def geography(x,y):
 	a = 0.3; c = -0.4;
@@ -50,14 +50,9 @@ for i in range(n):
 u0 =copy(h);
 #--------Velocities at t=0---------------
 
+#print "h=\n"
+#print h
 
-for i in range(1,n-1):
-	for j in range(1,n-1):
-		u1[i,j] = h[i,j] #Makes the first timestep with forward euler
-	u1[0,i] = u1[1,i] # 0;
-	u1[n-1,i] = u1[n-2,i] # 0;
-	u1[i,0] = u1[i,1] # 0;
-	u1[i,n-1] = u1[i,n-2]
 
 #--------Working loop---------------------
 # u1 = up
@@ -70,18 +65,36 @@ Dx = (1./(2*dx*dx))		#save some unnececary FLOPS
 Dy = (1./(2*dy*dy))		#save some unnececary FLOPS
 v = (2/(1+0.5*b*dt))		#save some unnececary FLOPS
 r = ((2-b*dt)/(2+b*dt))		#save some unnececary FLOPS
-
-for i in range(T):		
-	for j in range(1,n-1):
-		for k in range(1,n-1):
+#print "scale = %g; Dx = Dy = %g; "
+for j in xrange(1,n-1):
+	for k in xrange(1,n-1):
+		#Makes the first timestep 
+		A= Dx*((u0[j+1,k] - u0[j,k])*(q[j+1,k] + q[j,k]) -(u0[j,k] - u0[j-1,k])*(q[j,k] + q[j-1,k]));
+		B = Dy*((u0[j,k+1] - u0[j,k])*(q[j,k+1] + q[j,k]) - (u0[j,k] - u0[j,k-1])*(q[j,k] + q[j,k-1]));
+		C = v*u0[j,k]
+		u1[j,k] = (A + B + C)/(1+((2-b*dt)/(2+b*dt))); 
+u1[0,1:-1] = u1[1,1:-1] # 0;
+u1[1:-1,0] = u1[1:-1,1] # 0;
+u1[1:-1,n-1] = u1[1:-1,n-2]
+u1[-1,1:-1] = u1[-2,1:-1] # 0;
+#print "u1=\n"
+#print u1
+for i in xrange(T):
+	uny[1:-1,1:-1] = scale*Dx*((u1[2:,1:-1]-u1[1:-1,1:-1])*(q[2:,1:-1]+q[1:-1,1:-1])-(u1[1:-1,1:-1]-u1[:-2,1:-1])*(q[1:-1,1:-1]+ q[:-2,1:-1])) \
+		+scale*Dy*((u1[1:-1,2:]-u1[1:-1,1:-1])*(q[1:-1,2:]+q[1:-1,1:-1])-(u1[1:-1,1:-1]-u1[1:-1,:-2])*(q[1:-1,1:-1]+q[1:-1,:-2])) \
+		+ v*u1[1:-1,1:-1] - r*u0[1:-1,1:-1]
+	'''
+	for j in xrange(1,n-1):
+		for k in xrange(1,n-1):
 			A= Dx*((u1[j+1,k] - u1[j,k])*(q[j+1,k] + q[j,k]) -(u1[j,k] - u1[j-1,k])*(q[j,k] + q[j-1,k]));
 			B = Dy*((u1[j,k+1] - u1[j,k])*(q[j,k+1] + q[j,k]) - (u1[j,k] - u1[j,k-1])*(q[j,k] + q[j,k-1]));
 			C =  scale*f[j,k] + v*u1[j,k] - r*u0[j,k];
 			uny[j,k] = scale*A + scale*B + C;		
-		uny[0,j] = 0#uny[1,j] # 0;
-		uny[n-1,j] = 0#uny[n-2,j] # 0;
-		uny[j,0] = 0#uny[j,1] # 0;
-		uny[j,n-1] = 0#uny[j,n-2] # 0;
+	'''
+	uny[0,1:-1] = uny[1,1:-1] # 0;
+	uny[1:-1,0] = uny[1:-1,1] # 0;
+	uny[1:-1,n-1] = uny[1:-1,n-2]
+	uny[-1,1:-1] = uny[-2,1:-1] # 0;
 
 	u0 = copy(u1);
 	u1 = copy(uny);
