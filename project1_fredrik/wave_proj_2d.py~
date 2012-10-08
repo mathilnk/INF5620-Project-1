@@ -75,8 +75,8 @@ A = 0;
 B = 0;
 C = 0;
 scale = ((dt*dt)/(1+0.5*b*dt))	#save some unnececary FLOPS 
-Dx = (1./(2*dx*dx))		#save some unnececary FLOPS
-Dy = (1./(2*dy*dy))		#save some unnececary FLOPS
+Dx = (1./(dx*dx))		#save some unnececary FLOPS
+Dy = (1./(dy*dy))		#save some unnececary FLOPS
 v = (2/(1+0.5*b*dt))		#save some unnececary FLOPS
 r = ((1-0.5*b*dt)/(1+0.5*b*dt))		#save some unnececary FLOPS
 
@@ -122,23 +122,23 @@ u1[-1,1:-1] = u1[-2,1:-1]
 '''
 u1 = u0.copy()
 for i in xrange(T):
-	
+	'''
 	#f = f(f,i) # updates the source term
 	uny[1:-1,1:-1] = scale*Dx*((u1[2:,1:-1]-u1[1:-1,1:-1])*(q[2:,1:-1]+q[1:-1,1:-1])-(u1[1:-1,1:-1]-u1[:-2,1:-1])*(q[1:-1,1:-1]+q[:-2,1:-1])) \
 		+scale*Dy*((u1[1:-1,2:]-u1[1:-1,1:-1])*(q[1:-1,2:]+q[1:-1,1:-1])-(u1[1:-1,1:-1]-u1[1:-1,:-2])*(q[1:-1,1:-1]+q[1:-1,:-2])) \
 		+ v*u1[1:-1,1:-1] - r*u0[1:-1,1:-1]
-	'''
+	
 	uny[1:-1,1:-1] = 2*u1[1:-1,1:-1] - u0[1:-1,1:-1] + \
          Cx2*(u1[:-2,1:-1] - 2*u1[1:-1,1:-1] + u1[2:,1:-1]) + \
          Cy2*(u1[1:-1,:-2] - 2*u1[1:-1,1:-1] + u1[1:-1,2:])
-	
+	'''
 	for j in xrange(1,n-1):
 		for k in xrange(1,n-1):
 			A = dt2*Dx*( (u1[j+1,k] - 2*u1[j,k]+ u1[j-1,k]) );
 			B = dt2*Dy*( (u1[j,k+1] - 2*u1[j,k]+ u1[j,k-1]) );
 			C = 2*u1[j,k] - u0[j,k];
 			uny[j,k] = A + B + C;
-	'''		
+			
 	#uny[0,1:-1] = uny[1,1:-1] 
 	#uny[1:-1,0] = uny[1:-1,1] 
 	#uny[1:-1,n-1] = uny[1:-1,n-2]
