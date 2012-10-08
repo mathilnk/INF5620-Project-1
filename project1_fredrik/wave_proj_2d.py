@@ -40,8 +40,8 @@ def geography(x,y):
 
 for i in range(n):
 	for j in range(n):
-		h[i][j] = initial(X[i][j],Y[i][j]);
-		#q[i][j] = geography(X[i][j],Y[i][j]);
+		h[i,j] = initial(X[i,j],Y[i,j]);
+		#q[i,j] = geography(X[i,j],Y[i,j]);
 		q[i,j] *= 0.8; 
 
 
@@ -53,11 +53,11 @@ u0 =copy(h);
 
 for i in range(1,n-1):
 	for j in range(1,n-1):
-		u1[i][j] = h[i][j] #Makes the first timestep with forward euler
-	u1[0][i] = u1[1][i] # 0;
-	u1[n-1][i] = u1[n-2][i] # 0;
-	u1[i][0] = u1[i][1] # 0;
-	u1[i][n-1] = u1[i][n-2]
+		u1[i,j] = h[i,j] #Makes the first timestep with forward euler
+	u1[0,i] = u1[1,i] # 0;
+	u1[n-1,i] = u1[n-2,i] # 0;
+	u1[i,0] = u1[i,1] # 0;
+	u1[i,n-1] = u1[i,n-2]
 
 #--------Working loop---------------------
 # u1 = up
@@ -74,14 +74,14 @@ r = ((2-b*dt)/(2+b*dt))		#save some unnececary FLOPS
 for i in range(T):		
 	for j in range(1,n-1):
 		for k in range(1,n-1):
-			A= Dx*((u1[j+1][k] - u1[j][k])*(q[j+1][k] + q[j][k]) -(u1[j][k] - u1[j-1][k])*(q[j][k] + q[j-1][k]));
-			B = Dy*((u1[j][k+1] - u1[j][k])*(q[j][k+1] + q[j][k]) - (u1[j][k] - u1[j][k-1])*(q[j][k] + q[j][k-1]));
-			C =  scale*f[j][k] + v*u1[j][k] - r*u0[j][k];
-			uny[j][k] = scale*A + scale*B + C;		
-		uny[0][j] = 0#uny[1][j] # 0;
-		uny[n-1][j] = 0#uny[n-2][j] # 0;
-		uny[j][0] = 0#uny[j][1] # 0;
-		uny[j][n-1] = 0#uny[j][n-2] # 0;
+			A= Dx*((u1[j+1,k] - u1[j,k])*(q[j+1,k] + q[j,k]) -(u1[j,k] - u1[j-1,k])*(q[j,k] + q[j-1,k]));
+			B = Dy*((u1[j,k+1] - u1[j,k])*(q[j,k+1] + q[j,k]) - (u1[j,k] - u1[j,k-1])*(q[j,k] + q[j,k-1]));
+			C =  scale*f[j,k] + v*u1[j,k] - r*u0[j,k];
+			uny[j,k] = scale*A + scale*B + C;		
+		uny[0,j] = 0#uny[1,j] # 0;
+		uny[n-1,j] = 0#uny[n-2,j] # 0;
+		uny[j,0] = 0#uny[j,1] # 0;
+		uny[j,n-1] = 0#uny[j,n-2] # 0;
 
 	u0 = copy(u1);
 	u1 = copy(uny);
