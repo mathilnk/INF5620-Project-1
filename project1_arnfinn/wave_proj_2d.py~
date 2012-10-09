@@ -1,0 +1,171 @@
+"""
+    Solves the 2.dim wave-equation with dampening. Commandline arguments are upper time limit T, Nx,Lx
+    """
+from numpy import *
+from math import *
+import sys, os, time, math
+#import matplotlib.pyplot as plt
+#from scitools.std import *
+from mayavi import mlab
+
+#--------Initialization---------------
+
+T = int(sys.argv[1]);
+Nx = int(sys.argv[2]);
+Lx = float(sys.argv[3])
+
+Ny = Nx;
+Ly = Lx;
+
+sigma_x = 0.5; sigma_y = 0.5;
+
+X,Y = meshgrid(linspace(0,Ly,Nx+1),linspace(0,Ly,Ny+1))
+
+dx = X[1] - X[0]
+dy = Y[1] - Y[0]
+dt = dx/sqrt(2)
+dt_safety_factor = 1.0
+c = 1.0
+stability_limit = (1/float(c))*(1/sqrt(1/dx**2 + 1/dy**2))
+if dt <= 0:                # max time step?
+    dt = dt_safety_factor*stability_limit
+elif dt > stability_limit:
+    print 'error: dt=%g exceeds the stability limit %g' % \
+    (dt, stability_limit)
+
+n = len(X[0]);
+h = zeros((n,n));
+x_0 = Lx/2.0; y_0 = Ly/2.0;
+u0 = zeros((n,n)); u1 = zeros((n,n));
+uny = zeros((n,n));
+f = zeros((n,n));
+q = ones((n,n));
+b = 0;	# dampening coefficient
+
+#--------Initial conditions------------
+def initial(x,y):
+	"""
+        Returns the initial shape of the wave
+        """
+	return math.exp(-0.5*(((x-x_0)/(sigma_x))**2+((y-y_0)/(sigma_y))**2))
+
+def geography(x,y):
+	a = 0.3; c = -0.4;
+	return a*x + c*y
+def f(f,t):
+	"""
+        Returns the source term in a point at a given time
+        """
+	g = -0.3; k = 13; p = 3.8; m = 7.4
+	loc_sin = math.sin
+	for i in xrange(n):
+		for j in xrange(n):
+			f[i,j] = g*loc_sin(k*X[i,j] + p*Y[i,j] - m*t)
+	return f
+
+for i in xrange(1,n-1):
+	for j in xrange(1,n-1):
+		h[i,j] = initial(X[i,j],Y[i,j]);
+#q[i,j] = geography(X[i,j],Y[i,j]);
+q *= 0.8;
+h[0,1:-1] = h[1,1:-1]
+h[1:-1,0] = h[1:-1,1]
+h[1:-1,n-1] = h[1:-1,n-2]
+h[-1,1:-1] = h[-2,1:-1]
+
+
+
+u0 =copy(h);
+#--------Velocities at t=0---------------
+
+#print "h=\n"
+#print h
+
+
+#--------Working loop---------------------
+# u1 = up
+# u0 = upp
+A = 0;
+B = 0;
+C = 0;
+scale = ((dt*dt)/(1+0.5*b*dt))	#save some unnececary FLOPS
+Dx = (1./(2*dx*dx))		#save some unnececary FLOPS
+Dy = (1./(2*dy*dy))		#save some unnececary FLOPS
+v = (2/(1+0.5*b*dt))		#save some unnececary FLOPS
+r = ((1-0.5*b*dt)/(1+0.5*b*dt))		#save some unnececary FLOPS
+
+'''
+    This part is wrong for some reason...
+    u1[1:-1,1:-1] = (Dx*((u0[2:,1:-1]-u0[1:-1,1:-1])*(q[2:,1:-1] + q[1:-1,1:-1])-(u0[1:-1,1:-1]-u0[:-2,1:-1])*(q[1:-1,1:-1])+q[:-2,1:-1]) \
+	+Dy*((u0[1:-1,2:]-u0[1:-1,1:-1])*(q[1:-1,2:]+q[1:-1,1:-1])-(u0[1:-1,1:-1]-u0[1:-1,:-2])*(q[1:-1,1:-1]+q[1:-1,:-2])) \
+	+v*u0[1:-1,1:-1])
+    u1 /= (1+((2-b*dt)/(2+b*dt)))
+    #-----Langtangen code
+    Cx2 = (0.8*dt/dx)**2
+    Cy2 = (0.8*dt/dy)**2
+    dt2 = dt*dt
+    u1[1:-1,1:-1] = u0[1:-1,1:-1] +  \
+    0.5*Cx2*(u0[:-2,1:-1] - 2*u0[1:-1,1:-1] + u0[2:,1:-1]) +0.5*Cy2*(u0[1:-1,:-2] - 2*u0[1:-1,1:-1] + u0[1:-1,2:])
+    u1[0,1:-1] = u1[1,1:-1]
+    u1[1:-1,0] = u1[1:-1,1]
+    u1[1:-1,n-1] = u1[1:-1,n-2]
+    u1[-1,1:-1] = u1[-2,1:-1]
+    '''
+Cx2 = (0.8*dt/dx)**2
+Cy2 = (0.8*dt/dy)**2
+dt2 = dt*dt
+'''
+    for j in xrange(1,n-1):
+	for k in xrange(1,n-1):
+    #Makes the first timestep
+    
+    A= Dx*((u0[j+1,k] - u0[j,k])*(q[j+1,k] + q[j,k]) -(u0[j,k] - u0[j-1,k])*(q[j,k] + q[j-1,k]));
+    B = Dy*((u0[j,k+1] - u0[j,k])*(q[j,k+1] + q[j,k]) - (u0[j,k] - u0[j,k-1])*(q[j,k] + q[j,k-1]));
+    C = v*u0[j,k]
+    u1[j,k] = (A + B + C)/(1+((2-b*dt)/(2+b*dt)));
+    
+    A= dt2*Dx*((u0[j+1,k] - u0[j,k])*(q[j+1,k] + q[j,k]) -(u0[j,k] - u0[j-1,k])*(q[j,k] + q[j-1,k]));
+    B = dt2*Dy*((u0[j,k+1] - u0[j,k])*(q[j,k+1] + q[j,k]) - (u0[j,k] - u0[j,k-1])*(q[j,k] + q[j,k-1]));
+    C = u0[j,k]
+    u1[j,k] = (0.5*A + 0.5*B + C);
+    
+    u1[0,1:-1] = u1[1,1:-1]
+    u1[1:-1,0] = u1[1:-1,1]
+    u1[1:-1,n-1] = u1[1:-1,n-2]
+    u1[-1,1:-1] = u1[-2,1:-1]
+    '''
+u1 = u0.copy()
+for i in xrange(T):
+	
+	#f = f(f,i) # updates the source term
+	uny[1:-1,1:-1] = scale*Dx*((u1[2:,1:-1]-u1[1:-1,1:-1])*(q[2:,1:-1]+q[1:-1,1:-1])-(u1[1:-1,1:-1]-u1[:-2,1:-1])*(q[1:-1,1:-1]+q[:-2,1:-1])) \
+		+scale*Dy*((u1[1:-1,2:]-u1[1:-1,1:-1])*(q[1:-1,2:]+q[1:-1,1:-1])-(u1[1:-1,1:-1]-u1[1:-1,:-2])*(q[1:-1,1:-1]+q[1:-1,:-2])) \
+		+ v*u1[1:-1,1:-1] - r*u0[1:-1,1:-1]
+	'''
+        uny[1:-1,1:-1] = 2*u1[1:-1,1:-1] - u0[1:-1,1:-1] + \
+        Cx2*(u1[:-2,1:-1] - 2*u1[1:-1,1:-1] + u1[2:,1:-1]) + \
+        Cy2*(u1[1:-1,:-2] - 2*u1[1:-1,1:-1] + u1[1:-1,2:])
+        
+        for j in xrange(1,n-1):
+		for k in xrange(1,n-1):
+        A = dt2*Dx*( (u1[j+1,k] - 2*u1[j,k]+ u1[j-1,k]) );
+        B = dt2*Dy*( (u1[j,k+1] - 2*u1[j,k]+ u1[j,k-1]) );
+        C = 2*u1[j,k] - u0[j,k];
+        uny[j,k] = A + B + C;
+        '''
+	#uny[0,1:-1] = uny[1,1:-1]
+	#uny[1:-1,0] = uny[1:-1,1]
+	#uny[1:-1,n-1] = uny[1:-1,n-2]
+	#uny[-1,1:-1] = uny[-2,1:-1]
+	
+	u0 = u1.copy();
+	u1 = uny.copy();
+	print i
+#s = mlab.mesh(X, Y, u1)
+#mlab.show()
+#time.sleep(1)
+#print uny
+s = mlab.mesh(X, Y, u1)
+mlab.show()
+#print u1
+
