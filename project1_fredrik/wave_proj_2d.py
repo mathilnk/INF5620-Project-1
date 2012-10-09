@@ -1,5 +1,8 @@
 """
-Solves the 2.dim wave-equation with dampening. Commandline arguments are upper time limit T, Nx,Lx
+Solves the 2.dim wave-equation with dampening. Optional commandline arguments are number of timesteps (T),length of area in x and y  direction (Lx,Ly), number of meshpoints in x and y direction (Nx,Ny), and the size of the timestep (dt). The user cal also specify if a vectorized (default) or scalar solver should be used by setting "-s" for "scalar", and if a simple wave solver ithout damping and underlying geography should be used by setting "-b" for "basic". A program call might look like this:
+
+user@computer$: python wave_proj_2d.py -Lx 8 -T 350 -Nx 50 -b
+
 """
 from numpy import *
 from math import *
@@ -7,7 +10,7 @@ import sys, os, time, math,argparse
 #import matplotlib.pyplot as plt
 #from scitools.std import *
 from mayavi import mlab
-
+#--------Initialization---------------
 parser = argparse.ArgumentParser()
 parser.add_argument("-s",action="store_true") 
 parser.add_argument("-b",action="store_true")
@@ -18,7 +21,7 @@ parser.add_argument("-Nx", type = int, dest="Nx", help="Number of gridpoints in 
 parser.add_argument("-Ny", type = int, dest="Ny", help="Number of gridpoints i y direction")
 parser.add_argument("-dt", type = float, dest="dt", help="timestep")
 args = parser.parse_args()
-#--------Initialization---------------
+
 Lx = args.Lx if args.Lx != None else 5
 Ly = args.Ly if args.Ly != None else Lx
 T = args.T if args.T != None else 100
@@ -39,7 +42,7 @@ u0 = zeros((n,n)); u1 = zeros((n,n));
 uny = zeros((n,n));
 f = zeros((n,n));
 q = ones((n,n));
-b = 0;	# dampening coefficient
+b = 0.3;	# dampening coefficient
 
 #--------Initial conditions------------
 def initial(x,y):
@@ -65,7 +68,7 @@ def func(f,t):
 for i in xrange(1,n-1):
 	for j in xrange(1,n-1):
 		h[i,j] = initial(X[i,j],Y[i,j]);
-		#q[i,j] = geography(X[i,j],Y[i,j]);
+#q[:,:] = geography(X[:,:],Y[:,:]);
 q *= 0.8; 
 h[0,1:-1] = h[1,1:-1] 
 h[1:-1,0] = h[1:-1,1] 
@@ -98,13 +101,19 @@ if args.s and not args.b:
 			B = dt2*Dy*((u0[j,k+1] - u0[j,k])*(q[j,k+1] + q[j,k]) - (u0[j,k] - u0[j,k-1])*(q[j,k] + q[j,k-1]));
 			C = u0[j,k]
 			u1[j,k] = (0.5*A + 0.5*B + C); 
+	u1 = u0.copy()
 	for i in xrange(T):
 		for j in xrange(1,n-1):
 			for k in xrange(1,n-1):
-				A = dt2*Dx*( (u1[j+1,k]-u1[j,k])*(q[j+1,k]+q[j,k])-(u1[j,k]-u1[j-1,k])*(q[j,k]+q[j-1,k]) );
-				B = dt2*Dy*( (u1[j,k+1]-u1[j,k])*(q[j,k+1]+q[j,k])-(u1[j,k]-u1[j,k-1])*(q[j,k]+q[j,k-1]) );
+				A = Dx*( (u1[j+1,k]-u1[j,k])*(q[j+1,k]+q[j,k])-(u1[j,k]-u1[j-1,k])*(q[j,k]+q[j-1,k]) );
+				B = Dy*( (u1[j,k+1]-u1[j,k])*(q[j,k+1]+q[j,k])-(u1[j,k]-u1[j,k-1])*(q[j,k]+q[j,k-1]) );
 				C = v*u1[j,k] - r*u0[j,k];
-				uny[j,k] = A + B + C;
+				uny[j,k] = 0.5*scale*A + 0.5*scale*B + C;
+		print i
+		uny[0,1:-1] = uny[1,1:-1] 
+		uny[1:-1,0] = uny[1:-1,1] 
+		uny[1:-1,n-1] = uny[1:-1,n-2]
+		uny[-1,1:-1] = uny[-2,1:-1] 
 
 elif args.b and not args.s:
 	u1 = u0.copy()
@@ -140,13 +149,14 @@ elif args.b and args.s:
 	#time.sleep(1)
 else:
 	#vectorized (default) version
-	u1[1:-1,1:-1] = (Dx*((u0[2:,1:-1]-u0[1:-1,1:-1])*(q[2:,1:-1] + q[1:-1,1:-1])-(u0[1:-1,1:-1]-u0[:-2,1:-1])*(q[1:-1,1:-1])+q[:-2,1:-1]) \
-	+Dy*((u0[1:-1,2:]-u0[1:-1,1:-1])*(q[1:-1,2:]+q[1:-1,1:-1])-(u0[1:-1,1:-1]-u0[1:-1,:-2])*(q[1:-1,1:-1]+q[1:-1,:-2])) \
-	+v*u0[1:-1,1:-1])
+	u1[1:-1,1:-1] = (0.5*dt2*Dx*((u0[2:,1:-1]-u0[1:-1,1:-1])*(q[2:,1:-1] + q[1:-1,1:-1])-(u0[1:-1,1:-1]-u0[:-2,1:-1])*(q[1:-1,1:-1])+q[:-2,1:-1]) \
+	+0.5*dt2*Dy*((u0[1:-1,2:]-u0[1:-1,1:-1])*(q[1:-1,2:]+q[1:-1,1:-1])-(u0[1:-1,1:-1]-u0[1:-1,:-2])*(q[1:-1,1:-1]+q[1:-1,:-2])) \
+	+u0[1:-1,1:-1])
 	u1[0,1:-1] = u1[1,1:-1] 
 	u1[1:-1,0] = u1[1:-1,1] 
 	u1[1:-1,n-1] = u1[1:-1,n-2]
 	u1[-1,1:-1] = u1[-2,1:-1] 
+	u1 = u0.copy()
 	for i in xrange(T):
 		#f = f(f,i) # updates the source term
 		uny[1:-1,1:-1] = scale*Dx*((u1[2:,1:-1]-u1[1:-1,1:-1])*(q[2:,1:-1]+q[1:-1,1:-1])-(u1[1:-1,1:-1]-u1[:-2,1:-1])*(q[1:-1,1:-1]+q[:-2,1:-1])) \
@@ -160,8 +170,8 @@ else:
 		u0 = u1.copy();
 		u1 = uny.copy();
 #print uny
-#s = mlab.mesh(X, Y, u1)
-#mlab.show()
+s = mlab.mesh(X, Y, u1)
+mlab.show()
 #print u1
 
 '''
