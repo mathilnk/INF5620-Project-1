@@ -99,10 +99,10 @@ for i in xrange(T):
 	u0 = copy(u1);
 	u1 = copy(uny);
 	print i
-	#s = mlab.mesh(X, Y, u1)
+	s = mlab.mesh(X, Y, u1)
 	#mlab.show()
 	#time.sleep()
-s = mlab.mesh(X, Y, u1)
+#s = mlab.mesh(X, Y, u1)
 mlab.show()
 #print u1
 

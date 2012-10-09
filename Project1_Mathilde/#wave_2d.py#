@@ -16,7 +16,7 @@ def gauss(x,y):
     return exp(-(((x-x_0)/(2*sigma_x))**2+((y-y_0)/(2*sigma_y))**2))
 
 c = 0.8
-b = 0.35
+b = 2.0
 Nx = 50
 Ny = Nx
 #Nt = 30
