@@ -3,6 +3,10 @@ from matplotlib.pyplot import *
 from mpl_toolkits.mplot3d import Axes3D
 import glob, os
 from mayavi import mlab
+from scitools.std import movie
+
+for filename in glob.glob('wtmp*.png'):
+    os.remove(filename)
 
 I_f = lambda x,y: ones((len(x), len(y)), float)*1.2
 V_f = lambda x,y: zeros((len(x)+2, len(y)+2), float)
@@ -33,6 +37,7 @@ y = linspace(ystart,ystop,Ny)
 dx = x[1] - x[0]
 dy = y[1] - y[0]
 dt = dx/sqrt(2.0)
+#dt = 0.5
 Nt = int(tstop/dt)
 t = linspace(0, tstop,Nt)
 X1,Y1 = meshgrid(linspace(xstart,xstop,Nx),linspace(ystart,ystop,Ny))
@@ -76,10 +81,14 @@ u[:,-1] = u[:,-2].copy()
 #making u^-1
 upp = 2*dt*V + u
 
-#Axes3D.plot_surface(list(u))
+
 
 X,Y = meshgrid(linspace(xstart,xstop,Nx+2),linspace(ystart,ystop,Ny+2))
-s = mlab.mesh(X,Y,u)
+
+counter =0
+count = 0
+
+#f = figure()
 for k in xrange(Nt):
     for i in xrange(1,Nx):
         for j in xrange(1,Ny):
@@ -88,15 +97,28 @@ for k in xrange(Nt):
              rest = f0[i][j] + 4*up[i][j] + upp[i][j]*(b*dt-2)
              u[i][j] = 1.0/(2+b*dt)*(C_x**2*x_para + C_y**2*y_para + rest)
 
-    u[0,:] = u[1,:].copy()
-    u[:,0] = u[:,1].copy()
-    u[-1,:] = u[-2,:].copy()
-    u[:,-1] = u[:,-2].copy()
-    s = mlab.mesh(X,Y,u)
-    print k
+    u[0,:] = u[1,:]
+    u[:,0] = u[:,1]
+    u[-1,:] = u[-2,:]
+    u[:,-1] = u[:,-2]
+    
+    if k%10 == 0:
+        
+        counter+=1
+        #f = mlab.figure()
+        s = mlab.mesh(X,Y,u)
+        mlab.savefig("wtmp%04d.png" %k)
+    mlab.clf()
+    #mlab.draw()
+    #print k
     upp = up.copy()
     up = u.copy()
+print counter
 
 
-mlab.show()
+#mlab.show()
+movie("wtmp*.png")
 
+
+for filename in glob.glob('wtmp*.png'):
+    os.remove(filename)
