@@ -64,20 +64,28 @@ def func(f,t):
 		for j in xrange(n):
 			f[i,j] = g*loc_sin(k*X[i,j] + p*Y[i,j] - m*t)
 	return f
-
+def wall(i,j,q):
+	wall = 0
+	if q[i,j]<0.5:
+		wall = 0
+	else:
+		wall = 1
+	return wall;
+	
 for i in xrange(1,n-1):
 	for j in xrange(1,n-1):
-		h[i,j] = initial(X[i,j],Y[i,j]);
-		#q[i,j] = geography(X[i,j],Y[i,j]);
-q *= -0.1; 
+		u0[i,j] = initial(X[i,j],Y[i,j]);
+		q[i,j] = geography(X[i,j],Y[i,j]);
+q += abs(q.min())
+q /= q.max()
+#q *= -0.1; 
 #s = mlab.mesh(X,Y,q)
 #mlab.show()
-h[0,1:-1] = h[1,1:-1] 
-h[1:-1,0] = h[1:-1,1] 
-h[1:-1,n-1] = h[1:-1,n-2]
-h[-1,1:-1] = h[-2,1:-1] 
+u0[0,1:-1] = u0[1,1:-1] 
+u0[1:-1,0] = u0[1:-1,1] 
+u0[1:-1,n-1] = u0[1:-1,n-2]
+u0[-1,1:-1] = u0[-2,1:-1] 
 
-u0 =copy(h);
 A = 0;
 B = 0;
 C = 0;
@@ -107,10 +115,14 @@ if args.s and not args.b:
 	for i in xrange(T):
 		for j in xrange(1,n-1):
 			for k in xrange(1,n-1):
-				
-				A = Dx*( (u1[j+1,k]-u1[j,k])*(q[j+1,k]+q[j,k])-(u1[j,k]-u1[j-1,k])*(q[j,k]+q[j-1,k]) );
-				B = Dy*( (u1[j,k+1]-u1[j,k])*(q[j,k+1]+q[j,k])-(u1[j,k]-u1[j,k-1])*(q[j,k]+q[j,k-1]) );
-				C = v*u1[j,k] - r*u0[j,k];
+				if h[j,k]:
+					A = Dx*( (u1[j+1,k]-u1[j,k])*(q[j+1,k]+q[j,k])-(u1[j,k]-u1[j+1,k])*(q[j,k]+q[j+1,k]) );
+					B = Dy*( (u1[j,k+1]-u1[j,k])*(q[j,k+1]+q[j,k])-(u1[j,k]-u1[j,k+1])*(q[j,k]+q[j,k+1]) );
+					C = v*u1[j,k] - r*u0[j,k];
+				else:
+					A = Dx*( (u1[j+1,k]-u1[j,k])*(q[j+1,k]+q[j,k])-(u1[j,k]-u1[j-1,k])*(q[j,k]+q[j-1,k]) );
+					B = Dy*( (u1[j,k+1]-u1[j,k])*(q[j,k+1]+q[j,k])-(u1[j,k]-u1[j,k-1])*(q[j,k]+q[j,k-1]) );
+					C = v*u1[j,k] - r*u0[j,k];
 				uny[j,k] = scale*A + scale*B + C;
 		print i
 		uny[0,1:-1] = uny[1,1:-1] 
