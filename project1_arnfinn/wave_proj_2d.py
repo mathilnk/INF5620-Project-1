@@ -43,7 +43,7 @@ uny = zeros((n,n));
 f = zeros((n,n));
 q = ones((n,n));
 b = 0.1;	# dampening coefficient
-
+#dt = 0.1*dt
 #--------Initial conditions------------
 def initial(x,y):
 	"""
@@ -82,7 +82,7 @@ q /= q.max()
 #---picture of geography----
 aa = mlab.mesh(X, Y, q)
 mlab.savefig("geography.png")
-mlab.clf()
+mlab.figure()
 #q *= -0.1; 
 #s = mlab.mesh(X,Y,q)
 #mlab.show()
@@ -106,6 +106,7 @@ dt2 = dt*dt
 #--------Working loop---------------------
 # u1 = up
 # u0 = upp
+
 s = mlab.mesh(X[1:-1,1:-1], Y[1:-1,1:-1], u1[1:-1,1:-1])
 if args.s and not args.b:
 	#scalar version
@@ -138,10 +139,14 @@ if args.s and not args.b:
 		u0 = copy(u1);
 		u1 = copy(uny);
 		if i%5 == 0:
+
 			#f = mlab.figure()
-			s.mlab_source.scalars = u1[1:-1,1:-1]
+			#s.mlab_source.scalars = u1[1:-1,1:-1]
 			#s = mlab.mesh(X[1:-1,1:-1], Y[1:-1,1:-1], u1[1:-1,1:-1])
+			surf(X,Y,u1)			
 			mlab.savefig("wtmp%04d.png" %i)
+			#u_1 = np.arange(Nx*Ny).reshape((Nx,Ny))
+			#savetxt('texttmp.txt',u_1)
 		#mlab.clf()
 		#s = mlab.mesh(X[1:-1,1:-1], Y[1:-1,1:-1], u1[1:-1,1:-1])
 	#mlab.show()
@@ -216,7 +221,6 @@ for filename in glob.glob('wtmp*.png'):
 #>>>>>>> f4e2f09a46533df63091f18e4ea9ee4297f9f470
 #mlab.show()
 #print u1
-
 '''
 This part is wrong for some reason...
 u1[1:-1,1:-1] = (Dx*((u0[2:,1:-1]-u0[1:-1,1:-1])*(q[2:,1:-1] + q[1:-1,1:-1])-(u0[1:-1,1:-1]-u0[:-2,1:-1])*(q[1:-1,1:-1])+q[:-2,1:-1]) \
