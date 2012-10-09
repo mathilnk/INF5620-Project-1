@@ -52,8 +52,8 @@ def initial(x,y):
 	return math.exp(-0.5*(((x-x_0)/(sigma_x))**2+((y-y_0)/(sigma_y))**2))
 
 def geography(x,y):
-	a = 0.3; c = -0.4;
-	return a*x + c*y
+	a = 0.3; c = 0.4;
+	return a*x + c*y +0	
 def func(f,t):
 	"""
 	Returns the source term in a point at a given time
@@ -68,8 +68,10 @@ def func(f,t):
 for i in xrange(1,n-1):
 	for j in xrange(1,n-1):
 		h[i,j] = initial(X[i,j],Y[i,j]);
-#q[:,:] = geography(X[:,:],Y[:,:]);
-q *= 0.8; 
+		#q[i,j] = geography(X[i,j],Y[i,j]);
+q *= -0.1; 
+#s = mlab.mesh(X,Y,q)
+#mlab.show()
 h[0,1:-1] = h[1,1:-1] 
 h[1:-1,0] = h[1:-1,1] 
 h[1:-1,n-1] = h[1:-1,n-2]
@@ -105,25 +107,21 @@ if args.s and not args.b:
 	for i in xrange(T):
 		for j in xrange(1,n-1):
 			for k in xrange(1,n-1):
+				
 				A = Dx*( (u1[j+1,k]-u1[j,k])*(q[j+1,k]+q[j,k])-(u1[j,k]-u1[j-1,k])*(q[j,k]+q[j-1,k]) );
 				B = Dy*( (u1[j,k+1]-u1[j,k])*(q[j,k+1]+q[j,k])-(u1[j,k]-u1[j,k-1])*(q[j,k]+q[j,k-1]) );
 				C = v*u1[j,k] - r*u0[j,k];
-				uny[j,k] = 0.5*scale*A + 0.5*scale*B + C;
+				uny[j,k] = scale*A + scale*B + C;
 		print i
 		uny[0,1:-1] = uny[1,1:-1] 
 		uny[1:-1,0] = uny[1:-1,1] 
 		uny[1:-1,n-1] = uny[1:-1,n-2]
 		uny[-1,1:-1] = uny[-2,1:-1] 
-
-<<<<<<< HEAD
-	u0 = copy(u1);
-	u1 = copy(uny);
-	print i
-	s = mlab.mesh(X, Y, u1)
+		u0 = copy(u1);
+		u1 = copy(uny);
+	
+		s = mlab.mesh(X[1:-1,1:-1], Y[1:-1,1:-1], u1[1:-1,1:-1])
 	#mlab.show()
-	#time.sleep()
-#s = mlab.mesh(X, Y, u1)
-=======
 elif args.b and not args.s:
 	u1 = u0.copy()
 	for i in xrange(T):
@@ -179,8 +177,8 @@ else:
 		u0 = u1.copy();
 		u1 = uny.copy();
 #print uny
-s = mlab.mesh(X, Y, u1)
->>>>>>> f4e2f09a46533df63091f18e4ea9ee4297f9f470
+#s = mlab.mesh(X, Y, u1)
+#>>>>>>> f4e2f09a46533df63091f18e4ea9ee4297f9f470
 mlab.show()
 #print u1
 
