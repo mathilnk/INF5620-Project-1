@@ -115,6 +115,15 @@ if args.s and not args.b:
 		uny[1:-1,n-1] = uny[1:-1,n-2]
 		uny[-1,1:-1] = uny[-2,1:-1] 
 
+<<<<<<< HEAD
+	u0 = copy(u1);
+	u1 = copy(uny);
+	print i
+	s = mlab.mesh(X, Y, u1)
+	#mlab.show()
+	#time.sleep()
+#s = mlab.mesh(X, Y, u1)
+=======
 elif args.b and not args.s:
 	u1 = u0.copy()
 	for i in xrange(T):
@@ -171,6 +180,7 @@ else:
 		u1 = uny.copy();
 #print uny
 s = mlab.mesh(X, Y, u1)
+>>>>>>> f4e2f09a46533df63091f18e4ea9ee4297f9f470
 mlab.show()
 #print u1
 

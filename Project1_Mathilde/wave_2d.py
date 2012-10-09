@@ -5,31 +5,40 @@ import glob, os
 from mayavi import mlab
 
 I_f = lambda x,y: ones((len(x), len(y)), float)*1.2
-V_f = lambda x,y: ones((len(x)+2, len(y)+2), float)*1.2
+V_f = lambda x,y: zeros((len(x)+2, len(y)+2), float)
 q_f = lambda x,y: ones((len(x)+2, len(y)+2), float)*c
-f_f = lambda x,y: ones((len(x), len(y)), float)*1.2
+f_f = lambda x,y: zeros((len(x), len(y)), float)
+def gauss(x,y):
+    sigma_x = 0.5
+    sigma_y = 0.5
+    x_0 = 0
+    y_0 = 0
+    return exp(-(((x-x_0)/(2*sigma_x))**2+((y-y_0)/(2*sigma_y))**2))
 
-c = 0.7
-b = 1.0
-Nx = 10
+c = 0.8
+b = 2.0
+Nx = 50
 Ny = Nx
-Nt = 30
-xstop = 10.0
-xstart = -10.0
-ystop = 10.0
-ystart = -10.0
+#Nt = 30
+xstop = 5.0
+xstart = -5.0
+ystop = 5.0
+ystart = -5.0
 tstop = 20.0
 #boundary conditions du/dn = 0, meaning u_Nx = u_Nx+1
 x = linspace(xstart, xstop, Nx)
 y = linspace(ystart,ystop,Ny)
-t = linspace(0,tstop, Nt)
-dt = t[1] - t[0]
+#t = linspace(0,tstop, Nt)
+#dt = t[1] - t[0]
 dx = x[1] - x[0]
 dy = y[1] - y[0]
-
+dt = dx/sqrt(2.0)
+Nt = int(tstop/dt)
+t = linspace(0, tstop,Nt)
+X1,Y1 = meshgrid(linspace(xstart,xstop,Nx),linspace(ystart,ystop,Ny))
 q = q_f(x,y)
 V = V_f(x,y)
-I = I_f(x,y)
+I = gauss(X1,Y1)
 f0 = f_f(x,y)
 u = zeros((Nx+2,Ny+2), float)
 up = u.copy()
@@ -70,7 +79,8 @@ upp = 2*dt*V + u
 #Axes3D.plot_surface(list(u))
 
 X,Y = meshgrid(linspace(xstart,xstop,Nx+2),linspace(ystart,ystop,Ny+2))
-for i in xrange(Nt):
+s = mlab.mesh(X,Y,u)
+for k in xrange(Nt):
     for i in xrange(1,Nx):
         for j in xrange(1,Ny):
              x_para = ((q[i][j] + q[i+1][j])*(up[i+1][j] - up[i][j]) - (q[i-1][j] + q[i][j])*(up[i][j] - up[i-1][j]))
@@ -83,9 +93,10 @@ for i in xrange(Nt):
     u[-1,:] = u[-2,:].copy()
     u[:,-1] = u[:,-2].copy()
     s = mlab.mesh(X,Y,u)
+    print k
     upp = up.copy()
     up = u.copy()
 
 
-#mlab.show()
+mlab.show()
 
