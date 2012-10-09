@@ -5,10 +5,10 @@ user@computer$: python wave_proj_2d.py -Lx 8 -T 350 -Nx 50 -b
 
 """
 from numpy import *
-from math import *
-import sys, os, time, math,argparse
+#from math import *
+import sys, os, time, math,argparse, glob
 #import matplotlib.pyplot as plt
-#from scitools.std import *
+from scitools.std import *
 from mayavi import mlab
 #--------Initialization---------------
 parser = argparse.ArgumentParser()
@@ -42,7 +42,7 @@ u0 = zeros((n,n)); u1 = zeros((n,n));
 uny = zeros((n,n));
 f = zeros((n,n));
 q = ones((n,n));
-b = 0.3;	# dampening coefficient
+b = 0.1;	# dampening coefficient
 
 #--------Initial conditions------------
 def initial(x,y):
@@ -52,8 +52,8 @@ def initial(x,y):
 	return math.exp(-0.5*(((x-x_0)/(sigma_x))**2+((y-y_0)/(sigma_y))**2))
 
 def geography(x,y):
-	a = 0.3; c = 0.4;
-	return a*x + c*y +0	
+	a = 1.0; c = 1.0;
+	return a*x**2 + c*y +0	
 def func(f,t):
 	"""
 	Returns the source term in a point at a given time
@@ -76,8 +76,13 @@ for i in xrange(1,n-1):
 	for j in xrange(1,n-1):
 		u0[i,j] = initial(X[i,j],Y[i,j]);
 		q[i,j] = geography(X[i,j],Y[i,j]);
-q += abs(min(min(q)))
-q /= max(max(q))
+q += abs(q.min())
+q /= q.max()
+
+#---picture of geography----
+aa = mlab.mesh(X, Y, q)
+mlab.savefig("geography.png")
+mlab.clf()
 #q *= -0.1; 
 #s = mlab.mesh(X,Y,q)
 #mlab.show()
@@ -101,6 +106,7 @@ dt2 = dt*dt
 #--------Working loop---------------------
 # u1 = up
 # u0 = upp
+s = mlab.surf(X[1:-1,1:-1], Y[1:-1,1:-1], u1[1:-1,1:-1])
 if args.s and not args.b:
 	#scalar version
 	for j in xrange(1,n-1):
@@ -131,8 +137,13 @@ if args.s and not args.b:
 		uny[-1,1:-1] = uny[-2,1:-1] 
 		u0 = copy(u1);
 		u1 = copy(uny);
-	
-		s = mlab.mesh(X[1:-1,1:-1], Y[1:-1,1:-1], u1[1:-1,1:-1])
+		if i%5 == 0:
+			#f = mlab.figure()
+			s.mlab_source.scalars = u1[1:-1,1:-1]
+			#s = mlab.mesh(X[1:-1,1:-1], Y[1:-1,1:-1], u1[1:-1,1:-1])
+			mlab.savefig("wtmp%04d.png" %i)
+		#mlab.clf()
+		#s = mlab.mesh(X[1:-1,1:-1], Y[1:-1,1:-1], u1[1:-1,1:-1])
 	#mlab.show()
 elif args.b and not args.s:
 	u1 = u0.copy()
@@ -188,10 +199,22 @@ else:
 		uny[-1,1:-1] = uny[-2,1:-1] 		
 		u0 = u1.copy();
 		u1 = uny.copy();
+		if i%5 == 0:
+			#f = mlab.figure()
+			s.mlab_source.scalars = u1[1:-1,1:-1]
+			#s = mlab.mesh(X[1:-1,1:-1], Y[1:-1,1:-1], u1[1:-1,1:-1])
+			mlab.savefig("wtmp%04d.png" %i)
+
+movie("wtmp*.png")
+
+
+for filename in glob.glob('wtmp*.png'):
+    os.remove(filename)
+
 #print uny
 #s = mlab.mesh(X, Y, u1)
 #>>>>>>> f4e2f09a46533df63091f18e4ea9ee4297f9f470
-mlab.show()
+#mlab.show()
 #print u1
 
 '''
