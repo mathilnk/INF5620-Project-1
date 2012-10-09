@@ -98,7 +98,7 @@ if args.s and not args.b:
 			B = dt2*Dy*((u0[j,k+1] - u0[j,k])*(q[j,k+1] + q[j,k]) - (u0[j,k] - u0[j,k-1])*(q[j,k] + q[j,k-1]));
 			C = u0[j,k]
 			u1[j,k] = (0.5*A + 0.5*B + C); 
-	for i in xrange(T):
+	for i in xrange(t):
 		for j in xrange(1,n-1):
 			for k in xrange(1,n-1):
 				A = dt2*Dx*( (u1[j+1,k]-u1[j,k])*(q[j+1,k]+q[j,k])-(u1[j,k]-u1[j-1,k])*(q[j,k]+q[j-1,k]) );
@@ -106,15 +106,6 @@ if args.s and not args.b:
 				C = v*u1[j,k] - r*u0[j,k];
 				uny[j,k] = A + B + C;
 
-<<<<<<< HEAD
-	u0 = copy(u1);
-	u1 = copy(uny);
-	print i
-	s = mlab.mesh(X, Y, u1)
-	#mlab.show()
-	#time.sleep()
-#s = mlab.mesh(X, Y, u1)
-=======
 elif args.b and not args.s:
 	u1 = u0.copy()
 	for i in xrange(T):
@@ -168,7 +159,6 @@ else:
 		u1 = uny.copy();
 #print uny
 s = mlab.mesh(X, Y, u1)
->>>>>>> f4e2f09a46533df63091f18e4ea9ee4297f9f470
 mlab.show()
 #print u1
 
