@@ -1,3 +1,5 @@
+
+#from numpy import *
 from numpy import *
 from matplotlib.pyplot import *
 import glob, os
@@ -28,7 +30,7 @@ def standing_V(x,y):
     return -b*standing_exact(x,y,0)
     #return -b*cos(mx*x*pi/Lx)*cos(my*y*pi/Ly)
     
-def standing_exact(x,y,t):
+def standing_exact(x,y,t=0):
     return exp(-b*t)*cos(w*t)*cos(mx*x*pi/Lx)*cos(my*y*pi/Ly)
 
 
@@ -113,7 +115,7 @@ upp = 2*dt*V + u
 
 counter =0
 count = 0
-
+"""
 test = standing_exact(X,Y,0)
 #s = mlab.mesh(X,Y,test)
 filename = "exact_%d.gif"%Nt
@@ -144,7 +146,7 @@ for k in xrange(Nt):
     if k%5 == 0:
         5+5
         #f = mlab.figure()
-        s = mlab.mesh(X,Y,u, color=(.4,0.5,0.5))
+        s = mlab.mesh(X,Y,u, color=(0.0,0.75,1.0))
         #s.mlab_source.scalars = u
         #h = mesh(X,Y,u)
         mlab.savefig("wtmp%04d.png" %k)
@@ -154,7 +156,7 @@ for k in xrange(Nt):
     upp = up.copy()
     up = u.copy()
 
-"""
+
 #scalar-way
 
 """
