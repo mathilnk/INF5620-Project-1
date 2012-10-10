@@ -63,9 +63,10 @@ class wave_2d:
         Y = self.Y
         self.V = V_f(X,Y)
         self.I = self.I_f(X,Y)
+        self.q = q_f(X,Y)
         self.f = f_f(X,Y,0)
         print "hallo"
-        self.q = q_f(X,Y)
+        #self.q = q_f(X,Y)
         self.C_y = dt/self.dy
         self.C_x = dt/self.dx
 
@@ -201,6 +202,7 @@ class Standing_wave(wave_2d):
         self.my=my
         print "hei"
         wave_2d.__init__(self,Lx,Ly,T,Nx,Ny,dt,b,I_f=self.standing_exact,V_f=self.standing_V,f_f=self.standing_source, exact=self.standing_exact)
+       
    
 
 
@@ -240,7 +242,7 @@ class Gauss_wave(wave_2d):
         wave_2d.__init__(self,Lx,Ly,T,Nx,Ny,dt,b, I_f = self.gauss)
 
 
-w = wave_2d(10,10,80,30,30,0.1,standing=True)
+#w = wave_2d(10,10,80,30,30,0.1,standing=True)
 #w.make_exact()
 #w.solve_num()
 S = Standing_wave(0.1)
