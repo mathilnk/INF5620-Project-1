@@ -33,7 +33,8 @@ if args.dt <=0 or args.dt==None:
 else:
 	dt = args.dt
 sigma_x = 0.5; sigma_y = 0.5;
-X,Y = meshgrid(linspace(0,Ly,Nx/dx),linspace(0,Ly,Ny/dy))
+X,Y = meshgrid(linspace(0,Lx,(Nx/dx)),linspace(0,Ly,(Ny/dy)))
+
 n = len(X[0]);
 h = zeros((n,n));
 x_0 = Lx/2.0; y_0 = Ly/2.0;
@@ -87,9 +88,10 @@ init = ["Nx = "+str(Nx),"Lx = "+str(Lx),"Ny = "+str(Ny),"Ly = "+str(Lx),"dx = "+
 outfile = open('initial.txt','w')
 for i in init:
 	outfile.write(i);outfile.write(chr(10))
-	print i
+	#print i
 outfile.close()
-savetxt('u0.txt',u0[1:-1,1:-1])
+savetxt('u0.txt',u0)
+#print size(X),size(Y), size(u0)
 #--------Various solvers-------------------
 def solve_scalar_reflect(u0,u1,uny,q,h):
 	#scalar version with attempted refleting geometry
@@ -246,10 +248,12 @@ def solve_vectorized(u0,u1,uny,q,T):
 		u0 = u1.copy();
 		u1 = uny.copy();
 		if i%5 == 0:
+			savetxt('texttmp%.4d.txt'%i,u0)
 			#f = mlab.figure()
-			s.mlab_source.scalars = u1[1:-1,1:-1]
+			#s.mlab_source.scalars = u1[1:-1,1:-1]
 			#s = mlab.mesh(X[1:-1,1:-1], Y[1:-1,1:-1], u1[1:-1,1:-1])
-			mlab.savefig("wtmp%04d.png" %i)
+			#mlab.savefig("wtmp%04d.png" %i)
+			
 	return None
 #--------Working loop---------------------
 # u1 = up
@@ -263,10 +267,11 @@ elif args.b and args.s:
 	solve_scalar_simple(u0,u1,uny)
 else:
 	solve_vectorized(u0,u1,uny,q,T)
-
+'''
 movie("wtmp*.png")
 
 print glob('wtmp*.png')
 for filename in glob('wtmp*.png'):
     os.remove(filename)
 print "done"
+'''
