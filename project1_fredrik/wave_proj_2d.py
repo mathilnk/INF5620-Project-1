@@ -79,36 +79,27 @@ for i in xrange(1,n-1):
 q += abs(q.min())
 q /= q.max()
 
-#---picture of geography----
-aa = mlab.mesh(X, Y, q)
-mlab.savefig("geography.png")
-mlab.clf()
-#q *= -0.1; 
-#s = mlab.mesh(X,Y,q)
-#mlab.show()
 u0[0,1:-1] = u0[1,1:-1] 
 u0[1:-1,0] = u0[1:-1,1] 
 u0[1:-1,n-1] = u0[1:-1,n-2]
 u0[-1,1:-1] = u0[-2,1:-1] 
 
-A = 0;
-B = 0;
-C = 0;
-#save some unnececary FLOPS
-scale = ((dt*dt)/(1+0.5*b*dt))	
-Dx = (1./(2*dx*dx))		
-Dy = (1./(2*dy*dy))		
-v = (2/(1+0.5*b*dt))		
-r = ((1-0.5*b*dt)/(1+0.5*b*dt))	
-Cx2 = (0.8*dt/dx)**2
-Cy2 = (0.8*dt/dy)**2
-dt2 = dt*dt
-#--------Working loop---------------------
-# u1 = up
-# u0 = upp
-s = mlab.mesh(X[1:-1,1:-1], Y[1:-1,1:-1], u1[1:-1,1:-1])
-if args.s and not args.b:
-	#scalar version
+#--------Various solvers-------------------
+def solve_scalar_reflect(u0,u1,uny,q,h):
+	#scalar version with attempted refleting geometry
+	A = 0;
+	B = 0;
+	C = 0;
+	#save some unnececary FLOPS
+	scale = ((dt*dt)/(1+0.5*b*dt))	
+	Dx = (1./(2*dx*dx))		
+	Dy = (1./(2*dy*dy))		
+	v = (2/(1+0.5*b*dt))		
+	r = ((1-0.5*b*dt)/(1+0.5*b*dt))	
+	Cx2 = (0.8*dt/dx)**2
+	Cy2 = (0.8*dt/dy)**2
+	dt2 = dt*dt
+
 	for j in xrange(1,n-1):
 		for k in xrange(1,n-1):
 			#Makes the first timestep 
@@ -137,15 +128,53 @@ if args.s and not args.b:
 		uny[-1,1:-1] = uny[-2,1:-1] 
 		u0 = copy(u1);
 		u1 = copy(uny);
-		if i%5 == 0:
-			#f = mlab.figure()
-			s.mlab_source.scalars = u1[1:-1,1:-1]
-			#s = mlab.mesh(X[1:-1,1:-1], Y[1:-1,1:-1], u1[1:-1,1:-1])
-			mlab.savefig("wtmp%04d.png" %i)
-		#mlab.clf()
-		#s = mlab.mesh(X[1:-1,1:-1], Y[1:-1,1:-1], u1[1:-1,1:-1])
-	#mlab.show()
-elif args.b and not args.s:
+		
+	return None
+def solve_scalar(u0,u1,uny,q):
+	#Scalar solver with damping and subsea geometry
+	A = 0;
+	B = 0;
+	C = 0;
+	#save some unnececary FLOPS
+	scale = ((dt*dt)/(1+0.5*b*dt))	
+	Dx = (1./(2*dx*dx))		
+	Dy = (1./(2*dy*dy))		
+	v = (2/(1+0.5*b*dt))		
+	r = ((1-0.5*b*dt)/(1+0.5*b*dt))	
+	Cx2 = (0.8*dt/dx)**2
+	Cy2 = (0.8*dt/dy)**2
+	dt2 = dt*dt
+
+	for j in xrange(1,n-1):
+		for k in xrange(1,n-1):
+			#Makes the first timestep 
+			
+			A= dt2*Dx*((u0[j+1,k] - u0[j,k])*(q[j+1,k] + q[j,k]) -(u0[j,k] - u0[j-1,k])*(q[j,k] + q[j-1,k]));
+			B = dt2*Dy*((u0[j,k+1] - u0[j,k])*(q[j,k+1] + q[j,k]) - (u0[j,k] - u0[j,k-1])*(q[j,k] + q[j,k-1]));
+			C = u0[j,k]
+			u1[j,k] = (0.5*A + 0.5*B + C); 
+	u1 = u0.copy()
+	for i in xrange(T):
+		for j in xrange(1,n-1):
+			for k in xrange(1,n-1):
+				A = Dx*( (u1[j+1,k]-u1[j,k])*(q[j+1,k]+q[j,k])-(u1[j,k]-u1[j-1,k])*(q[j,k]+q[j-1,k]) );
+				B = Dy*( (u1[j,k+1]-u1[j,k])*(q[j,k+1]+q[j,k])-(u1[j,k]-u1[j,k-1])*(q[j,k]+q[j,k-1]) );
+				C = v*u1[j,k] - r*u0[j,k];
+				uny[j,k] = scale*A + scale*B + C;
+		print i
+		uny[0,1:-1] = uny[1,1:-1] 
+		uny[1:-1,0] = uny[1:-1,1] 
+		uny[1:-1,n-1] = uny[1:-1,n-2]
+		uny[-1,1:-1] = uny[-2,1:-1] 
+		u0 = copy(u1);
+		u1 = copy(uny);
+	return None
+	
+def solve_vectorized_simple(u0,u1,uny):
+	#vectorized solver without subsea geometry and damping
+	#save some unnececary FLOPS
+	Cx2 = (0.8*dt/dx)**2
+	Cy2 = (0.8*dt/dy)**2
 	u1 = u0.copy()
 	for i in xrange(T):
 		print i
@@ -156,8 +185,13 @@ elif args.b and not args.s:
 		uny[1:-1,0] = uny[1:-1,1] 
 		uny[1:-1,n-1] = uny[1:-1,n-2]
 		uny[-1,1:-1] = uny[-2,1:-1] 
-elif args.b and args.s:
-	u1 = u0.copy()
+	return None
+def solve_scalar_simple(u0,u1,uny):
+	#Scalar solver without damping and subsea geometry
+	A = 0; B = 0; C = 0;
+	Cx2 = (0.8*dt/dx)**2;
+	Cy2 = (0.8*dt/dy)**2;
+	u1 = u0.copy();
 	for i in xrange(T):	
 		for j in xrange(1,n-1):
 			for k in xrange(1,n-1):
@@ -165,20 +199,25 @@ elif args.b and args.s:
 				B = Cy2*(u1[j,k+1] - 2*u1[j,k] + u1[j,k-1]);
 				C = 2*u1[j,k] - u0[j,k];
 				uny[j,k] = A + B + C;
-			
 		uny[0,1:-1] = uny[1,1:-1] 
 		uny[1:-1,0] = uny[1:-1,1] 
 		uny[1:-1,n-1] = uny[1:-1,n-2]
 		uny[-1,1:-1] = uny[-2,1:-1] 
-	
 		u0 = u1.copy();
 		u1 = uny.copy();
 		print i
-	#s = mlab.mesh(X, Y, u1)
-	#mlab.show()
-	#time.sleep(1)
-else:
-	#vectorized (default) version
+	return None
+def solve_vectorized(u0,u1,uny,q,T):
+	#vectorized (default) version with damping and subsea geometry
+	scale = ((dt*dt)/(1+0.5*b*dt))	
+	Dx = (1./(2*dx*dx))		
+	Dy = (1./(2*dy*dy))		
+	v = (2/(1+0.5*b*dt))		
+	r = ((1-0.5*b*dt)/(1+0.5*b*dt))	
+	Cx2 = (0.8*dt/dx)**2
+	Cy2 = (0.8*dt/dy)**2
+	dt2 = dt*dt
+	#make the first timestep
 	u1[1:-1,1:-1] = (0.5*dt2*Dx*((u0[2:,1:-1]-u0[1:-1,1:-1])*(q[2:,1:-1] + q[1:-1,1:-1])-(u0[1:-1,1:-1]-u0[:-2,1:-1])*(q[1:-1,1:-1])+q[:-2,1:-1]) \
 	+0.5*dt2*Dy*((u0[1:-1,2:]-u0[1:-1,1:-1])*(q[1:-1,2:]+q[1:-1,1:-1])-(u0[1:-1,1:-1]-u0[1:-1,:-2])*(q[1:-1,1:-1]+q[1:-1,:-2])) \
 	+u0[1:-1,1:-1])
@@ -186,7 +225,8 @@ else:
 	u1[1:-1,0] = u1[1:-1,1] 
 	u1[1:-1,n-1] = u1[1:-1,n-2]
 	u1[-1,1:-1] = u1[-2,1:-1] 
-	u1 = u0.copy()
+	u1 = u0.copy() #first timestep in a working way
+	
 	for i in xrange(T):
 		#f = f(f,i) # updates the source term
 		uny[1:-1,1:-1] = scale*Dx*((u1[2:,1:-1]-u1[1:-1,1:-1])*(q[2:,1:-1]+q[1:-1,1:-1])-(u1[1:-1,1:-1]-u1[:-2,1:-1])*(q[1:-1,1:-1]+q[:-2,1:-1])) \
@@ -204,39 +244,23 @@ else:
 			s.mlab_source.scalars = u1[1:-1,1:-1]
 			#s = mlab.mesh(X[1:-1,1:-1], Y[1:-1,1:-1], u1[1:-1,1:-1])
 			mlab.savefig("wtmp%04d.png" %i)
+	return None
+#--------Working loop---------------------
+# u1 = up
+# u0 = upp
+s = mlab.mesh(X[1:-1,1:-1], Y[1:-1,1:-1], u1[1:-1,1:-1])
+if args.s and not args.b:
+	solve_scalar(u0,u1,uny,q)
+elif args.b and not args.s:
+	solve_vectorized_simple(u0,u1,uny)
+elif args.b and args.s:
+	solve_scalar_simple(u0,u1,uny)
+else:
+	solve_vectorized(u0,u1,uny,q,T)
 
 movie("wtmp*.png")
 
-
-for filename in glob.glob('wtmp*.png'):
+print glob('wtmp*.png')
+for filename in glob('wtmp*.png'):
     os.remove(filename)
-
-#print uny
-#s = mlab.mesh(X, Y, u1)
-#>>>>>>> f4e2f09a46533df63091f18e4ea9ee4297f9f470
-#mlab.show()
-#print u1
-
-'''
-This part is wrong for some reason...
-u1[1:-1,1:-1] = (Dx*((u0[2:,1:-1]-u0[1:-1,1:-1])*(q[2:,1:-1] + q[1:-1,1:-1])-(u0[1:-1,1:-1]-u0[:-2,1:-1])*(q[1:-1,1:-1])+q[:-2,1:-1]) \
-	+Dy*((u0[1:-1,2:]-u0[1:-1,1:-1])*(q[1:-1,2:]+q[1:-1,1:-1])-(u0[1:-1,1:-1]-u0[1:-1,:-2])*(q[1:-1,1:-1]+q[1:-1,:-2])) \
-	+v*u0[1:-1,1:-1])
-u1 /= (1+((2-b*dt)/(2+b*dt)))
-#-----Langtangen code
-
-u1[1:-1,1:-1] = u0[1:-1,1:-1] +  \
-0.5*Cx2*(u0[:-2,1:-1] - 2*u0[1:-1,1:-1] + u0[2:,1:-1]) +0.5*Cy2*(u0[1:-1,:-2] - 2*u0[1:-1,1:-1] + u0[1:-1,2:])
-u1[0,1:-1] = u1[1,1:-1] 
-u1[1:-1,0] = u1[1:-1,1] 
-u1[1:-1,n-1] = u1[1:-1,n-2]
-u1[-1,1:-1] = u1[-2,1:-1] 
-'''
-'''
-for j in xrange(1,n-1):
-	for k in xrange(1,n-1):
-		A = dt2*Dx*( (u1[j+1,k]-u1[j,k])*(q[j+1,k]+q[j,k])-(u1[j,k]-u1[j-1,k])*(q[j,k]+q[j-1,k]) );
-		B = dt2*Dy*( (u1[j,k+1]-u1[j,k])*(q[j,k+1]+q[j,k])-(u1[j,k]-u1[j,k-1])*(q[j,k]+q[j,k-1]) );
-		C = v*u1[j,k] - r*u0[j,k];
-		uny[j,k] = A + B + C;
-'''	
+print "done"
