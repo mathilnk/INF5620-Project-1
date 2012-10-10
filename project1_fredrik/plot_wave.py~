@@ -35,7 +35,7 @@ for matrix in sorted(glob.glob('texttmp*.txt')):
 	f.close()
 	os.remove(matrix)
 	print"hei paa du!"
-	mlab.figure()
+	#mlab.figure()
 	mlab.mesh(X[1:-1,1:-1], Y[1:-1,1:-1], l[1:-1,1:-1], color=(0.0,0.75,1.0))
 	mlab.savefig("wtmp%.4d.png" %i)
 	i+=1

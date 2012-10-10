@@ -5,6 +5,7 @@ user@computer$: python wave_proj_2d.py -Lx 8 -T 350 -Nx 50 -b
 
 """
 from numpy import *
+import random
 #from math import *
 import sys, os, time, math,argparse, glob
 #import matplotlib.pyplot as plt
@@ -44,7 +45,7 @@ uny = zeros((n,n));
 f = zeros((n,n));
 q = ones((n,n));
 b = 0.1;	# dampening coefficient
-dt = 0.1*dt
+#dt = 0.5*dt
 #--------Initial conditions------------
 '''
 def initial(x,y):
@@ -87,12 +88,13 @@ for i in xrange(1,n-1):
 		u0[i,j] += initial(X[i,j],Y[i,j],Lx/4.0,(Ly/4.0)*3.0);
 		u0[i,j] += initial(X[i,j],Y[i,j],(Lx/4.0)*3.0,Ly/4.0);
 		u0[i,j] += initial(X[i,j],Y[i,j],(Lx/4.0)*3.0,(Ly/4.0)*3.0);
+		u0[i,j] += initial(X[i,j],Y[i,j],Lx/2.0,Ly/2.0);
 		q[i,j] = geography(X[i,j],Y[i,j]);
 q += abs(q.min())
 q /= q.max()
 
 #---picture of geography----
-aa = mlab.mesh(X, Y, q)
+aa = mlab.mesh(X, Y, -q)
 mlab.savefig("geography.png")
 mlab.figure()
 #q *= -0.1; 
@@ -118,7 +120,7 @@ dt2 = dt*dt
 #--------Working loop---------------------
 # u1 = up
 # u0 = upp
-
+counter = 0
 s = mlab.mesh(X[1:-1,1:-1], Y[1:-1,1:-1], u1[1:-1,1:-1])
 if args.s and not args.b:
 	#scalar version
@@ -206,24 +208,36 @@ else:
 	u1[-1,1:-1] = u1[-2,1:-1] 
 	u1 = u0.copy()
 	for i in xrange(T):
+		f = zeros((n,n))
+		if (i+1)%50 == 0:
+			x0 = (Lx/random.randint(2,Lx-1))*random.randint(1,Lx)
+			y0 = (Ly/random.randint(2,Ly-1))*random.randint(1,Ly)
+			for o in xrange(1,n-1):
+				for p in xrange(1,n-1):
+					f[o,p] = 2*initial(X[o,p],Y[o,p],x0,y0);
 		#f = f(f,i) # updates the source term
 		uny[1:-1,1:-1] = scale*Dx*((u1[2:,1:-1]-u1[1:-1,1:-1])*(q[2:,1:-1]+q[1:-1,1:-1])-(u1[1:-1,1:-1]-u1[:-2,1:-1])*(q[1:-1,1:-1]+q[:-2,1:-1])) \
 		+scale*Dy*((u1[1:-1,2:]-u1[1:-1,1:-1])*(q[1:-1,2:]+q[1:-1,1:-1])-(u1[1:-1,1:-1]-u1[1:-1,:-2])*(q[1:-1,1:-1]+q[1:-1,:-2])) \
-		+ v*u1[1:-1,1:-1] - r*u0[1:-1,1:-1]
+		+ v*u1[1:-1,1:-1] - r*u0[1:-1,1:-1] +scale*f[1:-1,1:-1]
 		print(i)
+		
 		uny[0,1:-1] = uny[1,1:-1] 
 		uny[1:-1,0] = uny[1:-1,1] 
 		uny[1:-1,n-1] = uny[1:-1,n-2]
 		uny[-1,1:-1] = uny[-2,1:-1] 		
 		u0 = u1.copy();
 		u1 = uny.copy();
+		#savetxt('texttmp%04d.txt' %counter,u1) # FUNGERER!!!!!!!!!
+		#counter += 1
 		if i%5 == 0:
 			#print "du er her"
 			mlab.figure()
 			#s.mlab_source.scalars = u1[1:-1,1:-1]
 			#mlab.plot3d(X,Y,Z,u1)
-			s = mlab.mesh(X, Y, q)
-			s = mlab.mesh(X[1:-1,1:-1], Y[1:-1,1:-1], u1[1:-1,1:-1])	
+			#s = mlab.mesh(X, Y, -q)
+			s = mlab.mesh(X[1:-1,1:-1], Y[1:-1,1:-1], u1[1:-1,1:-1],\
+				color=(0.0, 0.749, 1.0))
+			#mlab.imshow(s, colormap='gist_earth')
 			#savetxt('texttmp%04d.txt' %i,u1) # FUNGERER!!!!!!!!!
 			mlab.savefig("wtmp%04d.png" %i)
 
