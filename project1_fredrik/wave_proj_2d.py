@@ -5,11 +5,10 @@ user@computer$: python wave_proj_2d.py -Lx 8 -T 350 -Nx 50 -b
 
 """
 from numpy import *
-#from math import *
 import sys, os, time, math,argparse, glob
-#import matplotlib.pyplot as plt
 from scitools.std import *
 from mayavi import mlab
+
 #--------Initialization---------------
 parser = argparse.ArgumentParser()
 parser.add_argument("-s",action="store_true") 
@@ -84,6 +83,13 @@ u0[1:-1,0] = u0[1:-1,1]
 u0[1:-1,n-1] = u0[1:-1,n-2]
 u0[-1,1:-1] = u0[-2,1:-1] 
 
+init = ["Nx = "+str(Nx),"Lx = "+str(Lx),"Ny = "+str(Ny),"Ly = "+str(Lx),"dx = "+str(dx),"dy = "+str(dy)]
+outfile = open('initial.txt','w')
+for i in init:
+	outfile.write(i);outfile.write(chr(10))
+	print i
+outfile.close()
+savetxt('u0.txt',u0[1:-1,1:-1])
 #--------Various solvers-------------------
 def solve_scalar_reflect(u0,u1,uny,q,h):
 	#scalar version with attempted refleting geometry

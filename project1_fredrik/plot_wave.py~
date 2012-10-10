@@ -28,7 +28,7 @@ u0 = [ map(float,line.split()) for line in f ]
 f.close()
 print Ly/dy,Ly
 
-X,Y = meshgrid(linspace(dx,Lx-dx,(Nx/dx)-2),linspace(dy,Ly-dy,(Ny/dy)-2))
+X,Y = meshgrid(linspace(0,Ly,Nx/dx),linspace(0,Ly,Ny/dy))
 print X
 s = mlab.mesh(X, Y, u0)
 for matrix in glob('texttmp*.txt'):
