@@ -33,19 +33,28 @@ if args.dt <=0 or args.dt==None:
 	dt = dx/sqrt(2)
 else:
 	dt = args.dt
-sigma_x = 0.5; sigma_y = 0.5;
+sigma_x = 0.25; sigma_y = 0.25;
+
 X,Y = meshgrid(linspace(0,Ly,Nx/dx),linspace(0,Ly,Ny/dy))
 n = len(X[0]);
 h = zeros((n,n));
-x_0 = Lx/2.0; y_0 = Ly/2.0;
+#x_0 = Lx/2.0; y_0 = Ly/2.0;
 u0 = zeros((n,n)); u1 = zeros((n,n));
 uny = zeros((n,n));
 f = zeros((n,n));
 q = ones((n,n));
 b = 0.1;	# dampening coefficient
-
+dt = 0.1*dt
 #--------Initial conditions------------
+'''
 def initial(x,y):
+	"""
+	Returns the initial shape of the wave
+	"""
+	return math.exp(-0.5*(((x-x_0)/(sigma_x))**2+((y-y_0)/(sigma_y))**2))
+'''
+
+def initial(x,y,x_0,y_0):
 	"""
 	Returns the initial shape of the wave
 	"""
@@ -71,10 +80,13 @@ def wall(i,j,q):
 	else:
 		wall = 1
 	return wall;
-	
+
 for i in xrange(1,n-1):
 	for j in xrange(1,n-1):
-		u0[i,j] = initial(X[i,j],Y[i,j]);
+		u0[i,j] += initial(X[i,j],Y[i,j],Lx/4.0,Ly/4.0);
+		u0[i,j] += initial(X[i,j],Y[i,j],Lx/4.0,(Ly/4.0)*3.0);
+		u0[i,j] += initial(X[i,j],Y[i,j],(Lx/4.0)*3.0,Ly/4.0);
+		u0[i,j] += initial(X[i,j],Y[i,j],(Lx/4.0)*3.0,(Ly/4.0)*3.0);
 		q[i,j] = geography(X[i,j],Y[i,j]);
 q += abs(q.min())
 q /= q.max()
@@ -82,7 +94,7 @@ q /= q.max()
 #---picture of geography----
 aa = mlab.mesh(X, Y, q)
 mlab.savefig("geography.png")
-mlab.clf()
+mlab.figure()
 #q *= -0.1; 
 #s = mlab.mesh(X,Y,q)
 #mlab.show()
@@ -106,6 +118,7 @@ dt2 = dt*dt
 #--------Working loop---------------------
 # u1 = up
 # u0 = upp
+
 s = mlab.mesh(X[1:-1,1:-1], Y[1:-1,1:-1], u1[1:-1,1:-1])
 if args.s and not args.b:
 	#scalar version
@@ -138,10 +151,15 @@ if args.s and not args.b:
 		u0 = copy(u1);
 		u1 = copy(uny);
 		if i%5 == 0:
+
 			#f = mlab.figure()
-			s.mlab_source.scalars = u1[1:-1,1:-1]
-			#s = mlab.mesh(X[1:-1,1:-1], Y[1:-1,1:-1], u1[1:-1,1:-1])
-			mlab.savefig("wtmp%04d.png" %i)
+			#s.mlab_source.scalars = u1[1:-1,1:-1]
+			s = mlab.mesh(X[1:-1,1:-1], Y[1:-1,1:-1], u1[1:-1,1:-1])
+			#surf(X,Y,u1)
+			#plot3d(X,Y,Z,u1)			
+			#mlab.savefig("wtmp%04d.png" %i)
+			#u_1 = np.arange(Nx*Ny).reshape((Nx,Ny))
+			#savetxt('texttmp.txt',u_1)
 		#mlab.clf()
 		#s = mlab.mesh(X[1:-1,1:-1], Y[1:-1,1:-1], u1[1:-1,1:-1])
 	#mlab.show()
@@ -200,15 +218,19 @@ else:
 		u0 = u1.copy();
 		u1 = uny.copy();
 		if i%5 == 0:
-			#f = mlab.figure()
-			s.mlab_source.scalars = u1[1:-1,1:-1]
-			#s = mlab.mesh(X[1:-1,1:-1], Y[1:-1,1:-1], u1[1:-1,1:-1])
+			#print "du er her"
+			mlab.figure()
+			#s.mlab_source.scalars = u1[1:-1,1:-1]
+			#mlab.plot3d(X,Y,Z,u1)
+			s = mlab.mesh(X, Y, q)
+			s = mlab.mesh(X[1:-1,1:-1], Y[1:-1,1:-1], u1[1:-1,1:-1])	
+			#savetxt('texttmp%04d.txt' %i,u1) # FUNGERER!!!!!!!!!
 			mlab.savefig("wtmp%04d.png" %i)
 
 movie("wtmp*.png")
 
 
-for filename in glob.glob('wtmp*.png'):
+for filename in glob('wtmp*.png'):
     os.remove(filename)
 
 #print uny
@@ -216,7 +238,6 @@ for filename in glob.glob('wtmp*.png'):
 #>>>>>>> f4e2f09a46533df63091f18e4ea9ee4297f9f470
 #mlab.show()
 #print u1
-
 '''
 This part is wrong for some reason...
 u1[1:-1,1:-1] = (Dx*((u0[2:,1:-1]-u0[1:-1,1:-1])*(q[2:,1:-1] + q[1:-1,1:-1])-(u0[1:-1,1:-1]-u0[:-2,1:-1])*(q[1:-1,1:-1])+q[:-2,1:-1]) \
