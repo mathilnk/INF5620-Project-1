@@ -36,6 +36,7 @@ sigma_x = 0.5; sigma_y = 0.5;
 X,Y = meshgrid(linspace(0,Lx,(Nx/dx)),linspace(0,Ly,(Ny/dy)))
 
 n = len(X[0]);
+V = zeros((n,n))
 h = zeros((n,n));
 x_0 = Lx/2.0; y_0 = Ly/2.0;
 u0 = zeros((n,n)); u1 = zeros((n,n));
@@ -75,7 +76,9 @@ def wall(i,j,q):
 for i in xrange(1,n-1):
 	for j in xrange(1,n-1):
 		u0[i,j] = initial(X[i,j],Y[i,j]);
-		q[i,j] = geography(X[i,j],Y[i,j]);
+		#q[i,j] = geography(X[i,j],Y[i,j]);
+		V[i,j] = 0.3*u0[i,j]
+
 q += abs(q.min())
 q /= q.max()
 
@@ -215,7 +218,7 @@ def solve_scalar_simple(u0,u1,uny):
 		u1 = uny.copy();
 		print i
 	return None
-def solve_vectorized(u0,u1,uny,q,T):
+def solve_vectorized(u0,u1,uny,q,T,V):
 	#vectorized (default) version with damping and subsea geometry
 	scale = ((dt*dt)/(1+0.5*b*dt))	
 	Dx = (1./(2*dx*dx))		
@@ -226,14 +229,17 @@ def solve_vectorized(u0,u1,uny,q,T):
 	Cy2 = (0.8*dt/dy)**2
 	dt2 = dt*dt
 	#make the first timestep
+	'''
 	u1[1:-1,1:-1] = (0.5*dt2*Dx*((u0[2:,1:-1]-u0[1:-1,1:-1])*(q[2:,1:-1] + q[1:-1,1:-1])-(u0[1:-1,1:-1]-u0[:-2,1:-1])*(q[1:-1,1:-1])+q[:-2,1:-1]) \
 	+0.5*dt2*Dy*((u0[1:-1,2:]-u0[1:-1,1:-1])*(q[1:-1,2:]+q[1:-1,1:-1])-(u0[1:-1,1:-1]-u0[1:-1,:-2])*(q[1:-1,1:-1]+q[1:-1,:-2])) \
 	+u0[1:-1,1:-1])
+	'''
+	u1[1:-1,1:-1] = u0[1:-1,1:-1] + 2*dt*V[1:-1,1:-1]*(b-dt)
 	u1[0,1:-1] = u1[1,1:-1] 
 	u1[1:-1,0] = u1[1:-1,1] 
 	u1[1:-1,n-1] = u1[1:-1,n-2]
 	u1[-1,1:-1] = u1[-2,1:-1] 
-	u1 = u0.copy() #first timestep in a working way
+	u1 *=0#= u0.copy() #first timestep in a working way
 	
 	for i in xrange(T):
 		#f = f(f,i) # updates the source term
@@ -266,7 +272,7 @@ elif args.b and not args.s:
 elif args.b and args.s:
 	solve_scalar_simple(u0,u1,uny)
 else:
-	solve_vectorized(u0,u1,uny,q,T)
+	solve_vectorized(u0,u1,uny,q,T,V)
 '''
 movie("wtmp*.png")
 
