@@ -1,7 +1,7 @@
 from mayavi import mlab
 from numpy import *
 from scitools.std import *
-import os, glob, time, re, argparse
+import os, glob, time, argparse
 from mayavi.api import OffScreenEngine
 
 parser = argparse.ArgumentParser()
@@ -65,4 +65,4 @@ if args.rm:
 		os.remove(i)
 	for i in xrange(length):
 		os.remove(files[i])
-		'''
+'''
