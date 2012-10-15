@@ -11,7 +11,7 @@ f_f_glob = lambda x,y,t: x*0
 
 class wave_2d:
 
-    def __init__(self, Lx, Ly, T, Nx, Ny, dt, b = 0,I_f=None, V_f=V_f_glob, q_f=q_f_glob, f_f=f_f_glob,exact=None, gauss=False, standing=False):
+    def __init__(self, Lx, Ly, Nt, Nx, Ny, dt, b = 0,I_f=None, V_f=V_f_glob, q_f=q_f_glob, f_f=f_f_glob,exact=None, gauss=False, standing=False):
         """
         I_f is the initial state-function, x,y
         V_f is the initial velocity-function, x,y
@@ -56,7 +56,8 @@ class wave_2d:
         self.y = linspace(0,Ly,Ny)
         self.dx = self.x[1]-self.x[0]
         self.dy = self.y[1]-self.y[0]
-        self.Nt = int(T/dt)
+        self.Nt = Nt
+        self.T = Nt*dt
         self.t = linspace(0,T,self.Nt)
 
         self.X1,self.Y1 = meshgrid(linspace(0,Lx,Nx),linspace(0,Ly,Ny))
@@ -76,9 +77,9 @@ class wave_2d:
     def gauss_f(self,x,y):
         sigma_x = 0.5
         sigma_y = 0.5
-        x_0 = 0
-        y_0 = 0
-        return exp(-(((x-x_0)/(2*sigma_x))**2+((y-y_0)/(2*sigma_y))**2))
+        x_0 = self.Lx/2.0
+        y_0 = self.Ly/2.0
+        return exp(-(0.5*((x-x_0)/(sigma_x))**2+0.5*((y-y_0)/(sigma_y))**2))
 
     def standing_source(self,x,y,t):#,my=0.5, mx=0.5):
         w = self.w
@@ -162,8 +163,11 @@ class wave_2d:
 
         #vectorized:
         filename_2 = "num_dt%2.1f.gif"%dt
+        '''
         if self.standing:
             filename_2 = "standing_wave_dt%2.1f.gif"%dt
+        else:
+        '''
         for filename in glob.glob('wtmp*.png'):
             os.remove(filename)
         
@@ -171,16 +175,16 @@ class wave_2d:
             x_para = (q[1:-1,1:-1] + q[2:,1:-1])*(up[2:,1:-1] - up[1:-1,1:-1]) - (q[:-2, 1:-1] + q[1:-1,1:-1])*(up[1:-1,1:-1] - up[:-2,1:-1])
             y_para = (q[1:-1,1:-1] + q[1:-1,2:])*(up[1:-1,2:] - up[1:-1,1:-1]) - (q[1:-1,:-2] + q[1:-1,1:-1])*(up[1:-1,1:-1] - up[1:-1,:-2])
             f = f_f(X,Y,t[k])
-            #print C_x, C_y
+            
             rest = f[1:-1,1:-1] + 4*up[1:-1,1:-1] + upp[1:-1,1:-1]*(b*dt-2)
             
             
-            u[1:-1,1:-1] = 1.0/(2+b*dt)*(C_x**3*x_para + C_y**2*y_para + rest)
-            
-            u[0,:] = u[1,:]
-            u[:,0] = u[:,1]
-            u[-1,:] = u[-2,:]
-            u[:,-1] = u[:,-2]
+            u[1:-1,1:-1] = 1.0/(2+b*dt)*(C_x**2*x_para + C_y**2*y_para + rest)
+            print (C_x**3)/(2+b*dt)
+            u[0,:] = u[2,:]
+            u[:,0] = u[:,2]
+            u[-1,:] = u[-3,:]
+            u[:,-1] = u[:,-3]
     
             if k%3 == 0:
                 
@@ -272,7 +276,7 @@ T = args.T if args.T != None else 100
 Nx = args.Nx if args.Nx != None else 25
 Ny = args.Ny if args.Ny != None else Nx
 
-dx = Lx/float(Nx+1); dt = 1./float(T+1); dy = Ly/float(Ny+1);
+dx = Lx/float(Nx+1); dt = 1.0; dy = Ly/float(Ny+1);
 if args.dt <=0 or args.dt==None:
 	dt = dx/sqrt(2)
 else:
@@ -284,7 +288,7 @@ else:
 
 #p = wave_2d(10,10,80,30,30,10.0/(29*sqrt(2)),I_f = plug_I)
 #p.solve_num()
-w = wave_2d(Lx,Ly,T,Nx,Ny,dt,standing=True)
+w = wave_2d(Lx,Ly,T,Nx,Ny,dt,gauss=True)
 #w.make_exact()
 
 w.solve_num()
