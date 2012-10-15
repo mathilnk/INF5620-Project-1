@@ -265,7 +265,6 @@ parser.add_argument("-Ny", type = int, dest="Ny", help="Number of gridpoints i y
 parser.add_argument("-dt", type = float, dest="dt", help="timestep")
 args = parser.parse_args()
 
-oneD = True
 
 Lx = args.Lx if args.Lx != None else 5
 Ly = args.Ly if args.Ly != None else Lx
@@ -285,7 +284,7 @@ else:
 
 #p = wave_2d(10,10,80,30,30,10.0/(29*sqrt(2)),I_f = plug_I)
 #p.solve_num()
-w = wave_2d(10,10,80,30,30,0.1,standing=True)
+w = wave_2d(Lx,Ly,T,Nx,Ny,dt,standing=True)
 #w.make_exact()
 
 w.solve_num()
