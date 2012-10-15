@@ -1,5 +1,5 @@
 import scitools.std as sci
-import glob,os,sys
+import glob,os,sys,argparse
 from numpy import *
 from mayavi import mlab
 
@@ -68,7 +68,7 @@ class wave_2d:
         self.I = self.I_f(X,Y)
         self.q = q_f(X,Y)
         self.f = f_f(X,Y,0)
-        print "hallo"
+        #print "hallo"
         #self.q = q_f(X,Y)
         self.C_y = dt/self.dy
         self.C_x = dt/self.dx
@@ -253,6 +253,32 @@ def plug_I(x,y):
     I[a[0]/2-dx:a[0]/2+dx,:] = I[a[0]/2-dx:a[0]/2+dx,:]+2
     return I
     
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-s",action="store_true", help="use scalar solver") 
+parser.add_argument("-b",action="store_true", help ="use the basic solver without damping and subsea terrain")
+parser.add_argument("-Lx", type = int, dest="Lx", help="Size of area in x direction")
+parser.add_argument("-Ly", type = int, dest="Ly", help="Size of area in y direction")
+parser.add_argument("-T", type = int, dest="T", help="Number of timesteps")
+parser.add_argument("-Nx", type = int, dest="Nx", help="Number of gridpoints in x direction")
+parser.add_argument("-Ny", type = int, dest="Ny", help="Number of gridpoints i y direction")
+parser.add_argument("-dt", type = float, dest="dt", help="timestep")
+args = parser.parse_args()
+
+oneD = True
+
+Lx = args.Lx if args.Lx != None else 5
+Ly = args.Ly if args.Ly != None else Lx
+T = args.T if args.T != None else 100
+Nx = args.Nx if args.Nx != None else 25
+Ny = args.Ny if args.Ny != None else Nx
+
+dx = Lx/float(Nx+1); dt = 1./float(T+1); dy = Ly/float(Ny+1);
+if args.dt <=0 or args.dt==None:
+	dt = dx/sqrt(2)
+else:
+	dt = args.dt
+	
 
 
 #plug_I(zeros((10,5),float), 8)

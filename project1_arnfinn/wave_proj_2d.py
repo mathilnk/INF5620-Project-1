@@ -89,7 +89,7 @@ for i in xrange(1,n-1):
 		u0[i,j] += initial(X[i,j],Y[i,j],x0,y0,sigma_x,sigma_y);
 		q[i,j] = geography(X[i,j],Y[i,j]);
 q += abs(q.min())
-q /= q.max()
+q /= (q.max()+1)
 
 u0[0,1:-1] = u0[1,1:-1] 
 u0[1:-1,0] = u0[1:-1,1] 

@@ -10,16 +10,20 @@ import sys, os, time, math,argparse, glob
 #import matplotlib.pyplot as plt
 from scitools.std import *
 from mayavi import mlab
+import pickle
+
 #--------Initialization---------------
 parser = argparse.ArgumentParser()
-parser.add_argument("-s",action="store_true") 
-parser.add_argument("-b",action="store_true")
+parser.add_argument("-s",action="store_true", help="Scalar solver with damping and subsea geometry. If -s and -b Scalar solver without damping and subsea geometry") 
+parser.add_argument("-b",action="store_true", help="vectorized solver without subsea geometry and damping. If -s and -b Scalar solver without damping and subsea geometry")
 parser.add_argument("-Lx", type = int, dest="Lx", help="Size of area in x direction")
 parser.add_argument("-Ly", type = int, dest="Ly", help="Size of area in y direction")
 parser.add_argument("-T", type = int, dest="T", help="Number of timesteps")
 parser.add_argument("-Nx", type = int, dest="Nx", help="Number of gridpoints in x direction")
 parser.add_argument("-Ny", type = int, dest="Ny", help="Number of gridpoints i y direction")
 parser.add_argument("-dt", type = float, dest="dt", help="timestep")
+parser.add_argument("-movie", action="store_true") 
+parser.add_argument("-rm", action="store_true")
 args = parser.parse_args()
 
 Lx = args.Lx if args.Lx != None else 5
@@ -33,19 +37,20 @@ if args.dt <=0 or args.dt==None:
 	dt = dx/sqrt(2)
 else:
 	dt = args.dt
-sigma_x = 0.5; sigma_y = 0.5;
+#sigma_x = 0.5; sigma_y = 0.5;
 X,Y = meshgrid(linspace(0,Ly,Nx/dx),linspace(0,Ly,Ny/dy))
 n = len(X[0]);
 h = zeros((n,n));
-x_0 = Lx/2.0; y_0 = Ly/2.0;
+#x_0 = Lx/2.0; y_0 = Ly/2.0;
 u0 = zeros((n,n)); u1 = zeros((n,n));
 uny = zeros((n,n));
 f = zeros((n,n));
 q = ones((n,n));
 b = 0.1;	# dampening coefficient
-#dt = 0.1*dt
+
+
 #--------Initial conditions------------
-def initial(x,y):
+def initial(x,y,x_0,y_0,sigma_x,sigma_y):
 	"""
 	Returns the initial shape of the wave
 	"""
@@ -53,7 +58,8 @@ def initial(x,y):
 
 def geography(x,y):
 	a = 1.0; c = 1.0;
-	return a*x**2 + c*y +0	
+	return a*x + c*y +0	
+
 def func(f,t):
 	"""
 	Returns the source term in a point at a given time
@@ -64,6 +70,7 @@ def func(f,t):
 		for j in xrange(n):
 			f[i,j] = g*loc_sin(k*X[i,j] + p*Y[i,j] - m*t)
 	return f
+
 def wall(i,j,q):
 	wall = 0
 	if q[i,j]<0.5:
@@ -71,45 +78,50 @@ def wall(i,j,q):
 	else:
 		wall = 1
 	return wall;
-	
+
+x0 = random.randint((Lx/2)-(Lx/4),(Lx/2)+(Lx/4))
+y0 = random.randint((Ly/2)-(Ly/4),(Ly/2)+(Ly/4))
+sigma_x = random.uniform(0.05,0.15)
+sigma_y = sigma_x
+
 for i in xrange(1,n-1):
 	for j in xrange(1,n-1):
-		u0[i,j] = initial(X[i,j],Y[i,j]);
+		u0[i,j] += initial(X[i,j],Y[i,j],x0,y0,sigma_x,sigma_y);
 		q[i,j] = geography(X[i,j],Y[i,j]);
 q += abs(q.min())
 q /= q.max()
 
-#---picture of geography----
-aa = mlab.mesh(X, Y, q)
-mlab.savefig("geography.png")
-mlab.figure()
-#q *= -0.1; 
-#s = mlab.mesh(X,Y,q)
-#mlab.show()
 u0[0,1:-1] = u0[1,1:-1] 
 u0[1:-1,0] = u0[1:-1,1] 
 u0[1:-1,n-1] = u0[1:-1,n-2]
 u0[-1,1:-1] = u0[-2,1:-1] 
 
-A = 0;
-B = 0;
-C = 0;
-#save some unnececary FLOPS
-scale = ((dt*dt)/(1+0.5*b*dt))	
-Dx = (1./(2*dx*dx))		
-Dy = (1./(2*dy*dy))		
-v = (2/(1+0.5*b*dt))		
-r = ((1-0.5*b*dt)/(1+0.5*b*dt))	
-Cx2 = (0.8*dt/dx)**2
-Cy2 = (0.8*dt/dy)**2
-dt2 = dt*dt
-#--------Working loop---------------------
-# u1 = up
-# u0 = upp
+#--------Write initial values to file--
 
-s = mlab.mesh(X[1:-1,1:-1], Y[1:-1,1:-1], u1[1:-1,1:-1])
-if args.s and not args.b:
-	#scalar version
+init = ["Nx = "+str(Nx),"Lx = "+str(Lx),"Ny = "+str(Ny),"Ly = "+str(Lx)]
+outfile = open('initial.txt','w')
+for i in init:
+	outfile.write(i);outfile.write(chr(10))
+	#print i
+outfile.close()
+savetxt('u0.txt',u0)
+
+#--------Various solvers-------------------
+def solve_scalar_reflect(u0,u1,uny,q,h):
+	#scalar version with attempted refleting geometry
+	A = 0;
+	B = 0;
+	C = 0;
+	#save some unnececary FLOPS
+	scale = ((dt*dt)/(1+0.5*b*dt))	
+	Dx = (1./(2*dx*dx))		
+	Dy = (1./(2*dy*dy))		
+	v = (2/(1+0.5*b*dt))		
+	r = ((1-0.5*b*dt)/(1+0.5*b*dt))	
+	Cx2 = (0.8*dt/dx)**2
+	Cy2 = (0.8*dt/dy)**2
+	dt2 = dt*dt
+
 	for j in xrange(1,n-1):
 		for k in xrange(1,n-1):
 			#Makes the first timestep 
@@ -138,19 +150,53 @@ if args.s and not args.b:
 		uny[-1,1:-1] = uny[-2,1:-1] 
 		u0 = copy(u1);
 		u1 = copy(uny);
-		if i%5 == 0:
+		
+	return None
+def solve_scalar(u0,u1,uny,q):
+	#Scalar solver with damping and subsea geometry
+	A = 0;
+	B = 0;
+	C = 0;
+	#save some unnececary FLOPS
+	scale = ((dt*dt)/(1+0.5*b*dt))	
+	Dx = (1./(2*dx*dx))		
+	Dy = (1./(2*dy*dy))		
+	v = (2/(1+0.5*b*dt))		
+	r = ((1-0.5*b*dt)/(1+0.5*b*dt))	
+	Cx2 = (0.8*dt/dx)**2
+	Cy2 = (0.8*dt/dy)**2
+	dt2 = dt*dt
 
-			#f = mlab.figure()
-			#s.mlab_source.scalars = u1[1:-1,1:-1]
-			#s = mlab.mesh(X[1:-1,1:-1], Y[1:-1,1:-1], u1[1:-1,1:-1])
-			surf(X,Y,u1)			
-			mlab.savefig("wtmp%04d.png" %i)
-			#u_1 = np.arange(Nx*Ny).reshape((Nx,Ny))
-			#savetxt('texttmp.txt',u_1)
-		#mlab.clf()
-		#s = mlab.mesh(X[1:-1,1:-1], Y[1:-1,1:-1], u1[1:-1,1:-1])
-	#mlab.show()
-elif args.b and not args.s:
+	for j in xrange(1,n-1):
+		for k in xrange(1,n-1):
+			#Makes the first timestep 
+			
+			A= dt2*Dx*((u0[j+1,k] - u0[j,k])*(q[j+1,k] + q[j,k]) -(u0[j,k] - u0[j-1,k])*(q[j,k] + q[j-1,k]));
+			B = dt2*Dy*((u0[j,k+1] - u0[j,k])*(q[j,k+1] + q[j,k]) - (u0[j,k] - u0[j,k-1])*(q[j,k] + q[j,k-1]));
+			C = u0[j,k]
+			u1[j,k] = (0.5*A + 0.5*B + C); 
+	u1 = u0.copy()
+	for i in xrange(T):
+		for j in xrange(1,n-1):
+			for k in xrange(1,n-1):
+				A = Dx*( (u1[j+1,k]-u1[j,k])*(q[j+1,k]+q[j,k])-(u1[j,k]-u1[j-1,k])*(q[j,k]+q[j-1,k]) );
+				B = Dy*( (u1[j,k+1]-u1[j,k])*(q[j,k+1]+q[j,k])-(u1[j,k]-u1[j,k-1])*(q[j,k]+q[j,k-1]) );
+				C = v*u1[j,k] - r*u0[j,k];
+				uny[j,k] = scale*A + scale*B + C;
+		print i
+		uny[0,1:-1] = uny[1,1:-1] 
+		uny[1:-1,0] = uny[1:-1,1] 
+		uny[1:-1,n-1] = uny[1:-1,n-2]
+		uny[-1,1:-1] = uny[-2,1:-1] 
+		u0 = copy(u1);
+		u1 = copy(uny);
+	return None
+	
+def solve_vectorized_simple(u0,u1,uny):
+	#vectorized solver without subsea geometry and damping
+	#save some unnececary FLOPS
+	Cx2 = (0.8*dt/dx)**2
+	Cy2 = (0.8*dt/dy)**2
 	u1 = u0.copy()
 	for i in xrange(T):
 		print i
@@ -161,8 +207,13 @@ elif args.b and not args.s:
 		uny[1:-1,0] = uny[1:-1,1] 
 		uny[1:-1,n-1] = uny[1:-1,n-2]
 		uny[-1,1:-1] = uny[-2,1:-1] 
-elif args.b and args.s:
-	u1 = u0.copy()
+	return None
+def solve_scalar_simple(u0,u1,uny):
+	#Scalar solver without damping and subsea geometry
+	A = 0; B = 0; C = 0;
+	Cx2 = (0.8*dt/dx)**2;
+	Cy2 = (0.8*dt/dy)**2;
+	u1 = u0.copy();
 	for i in xrange(T):	
 		for j in xrange(1,n-1):
 			for k in xrange(1,n-1):
@@ -170,20 +221,26 @@ elif args.b and args.s:
 				B = Cy2*(u1[j,k+1] - 2*u1[j,k] + u1[j,k-1]);
 				C = 2*u1[j,k] - u0[j,k];
 				uny[j,k] = A + B + C;
-			
 		uny[0,1:-1] = uny[1,1:-1] 
 		uny[1:-1,0] = uny[1:-1,1] 
 		uny[1:-1,n-1] = uny[1:-1,n-2]
 		uny[-1,1:-1] = uny[-2,1:-1] 
-	
 		u0 = u1.copy();
 		u1 = uny.copy();
 		print i
-	#s = mlab.mesh(X, Y, u1)
-	#mlab.show()
-	#time.sleep(1)
-else:
-	#vectorized (default) version
+	return None
+def solve_vectorized(u0,u1,uny,q,f,T,n):
+	#vectorized (default) version with damping and subsea geometry
+	counter = 1
+	scale = ((dt*dt)/(1+0.5*b*dt))	
+	Dx = (1./(2*dx*dx))		
+	Dy = (1./(2*dy*dy))		
+	v = (2/(1+0.5*b*dt))		
+	r = ((1-0.5*b*dt)/(1+0.5*b*dt))	
+	Cx2 = (0.8*dt/dx)**2
+	Cy2 = (0.8*dt/dy)**2
+	dt2 = dt*dt
+	#make the first timestep
 	u1[1:-1,1:-1] = (0.5*dt2*Dx*((u0[2:,1:-1]-u0[1:-1,1:-1])*(q[2:,1:-1] + q[1:-1,1:-1])-(u0[1:-1,1:-1]-u0[:-2,1:-1])*(q[1:-1,1:-1])+q[:-2,1:-1]) \
 	+0.5*dt2*Dy*((u0[1:-1,2:]-u0[1:-1,1:-1])*(q[1:-1,2:]+q[1:-1,1:-1])-(u0[1:-1,1:-1]-u0[1:-1,:-2])*(q[1:-1,1:-1]+q[1:-1,:-2])) \
 	+u0[1:-1,1:-1])
@@ -191,12 +248,25 @@ else:
 	u1[1:-1,0] = u1[1:-1,1] 
 	u1[1:-1,n-1] = u1[1:-1,n-2]
 	u1[-1,1:-1] = u1[-2,1:-1] 
-	u1 = u0.copy()
+	u1 = u0.copy() #first timestep in a working way
+	
 	for i in xrange(T):
+
+		f = zeros((n,n))
+		
+		if (i)%5 == 0:
+			x0 = random.randint(1,Lx-1)
+			y0 = random.randint(1,Ly-1)
+			sigma_x = random.uniform(0.05,0.15)
+			sigma_y = sigma_x
+			for o in xrange(1,n-1):
+				for p in xrange(1,n-1):
+					f[o,p] = 5*initial(X[o,p],Y[o,p],x0,y0,sigma_x,sigma_y);
+					
 		#f = f(f,i) # updates the source term
 		uny[1:-1,1:-1] = scale*Dx*((u1[2:,1:-1]-u1[1:-1,1:-1])*(q[2:,1:-1]+q[1:-1,1:-1])-(u1[1:-1,1:-1]-u1[:-2,1:-1])*(q[1:-1,1:-1]+q[:-2,1:-1])) \
 		+scale*Dy*((u1[1:-1,2:]-u1[1:-1,1:-1])*(q[1:-1,2:]+q[1:-1,1:-1])-(u1[1:-1,1:-1]-u1[1:-1,:-2])*(q[1:-1,1:-1]+q[1:-1,:-2])) \
-		+ v*u1[1:-1,1:-1] - r*u0[1:-1,1:-1]
+		+ v*u1[1:-1,1:-1] - r*u0[1:-1,1:-1] + scale*f[1:-1,1:-1]
 		print(i)
 		uny[0,1:-1] = uny[1,1:-1] 
 		uny[1:-1,0] = uny[1:-1,1] 
@@ -204,43 +274,43 @@ else:
 		uny[-1,1:-1] = uny[-2,1:-1] 		
 		u0 = u1.copy();
 		u1 = uny.copy();
+		
 		if i%5 == 0:
-			#f = mlab.figure()
-			s.mlab_source.scalars = u1[1:-1,1:-1]
-			#s = mlab.mesh(X[1:-1,1:-1], Y[1:-1,1:-1], u1[1:-1,1:-1])
-			mlab.savefig("wtmp%04d.png" %i)
+			savetxt('texttmp%.4d.txt'%counter,u0)
+			counter += 1
+	return None
+#--------Working loop---------------------
+# u1 = up
+# u0 = upp
+#s = mlab.mesh(X[1:-1,1:-1], Y[1:-1,1:-1], u1[1:-1,1:-1])
+if args.s and not args.b:
+	solve_scalar(u0,u1,uny,q)
+elif args.b and not args.s:
+	solve_vectorized_simple(u0,u1,uny)
+elif args.b and args.s:
+	solve_scalar_simple(u0,u1,uny)
+else:
+	solve_vectorized(u0,u1,uny,q,f,T,n)
 
-movie("wtmp*.png")
+if args.movie and not args.rm:
+	#must install xvfb to run this
+	cmd = 'xvfb-run --server-args="-screen 0 1024x768x24" python plot_wave.py'
+	failure = os.system(cmd)
+	if failure:
+		print 'Execution of "%s failed\n' %cmd
 
-
-for filename in glob.glob('wtmp*.png'):
-    os.remove(filename)
-
-#print uny
-#s = mlab.mesh(X, Y, u1)
-#>>>>>>> f4e2f09a46533df63091f18e4ea9ee4297f9f470
-#mlab.show()
-#print u1
-'''
-This part is wrong for some reason...
-u1[1:-1,1:-1] = (Dx*((u0[2:,1:-1]-u0[1:-1,1:-1])*(q[2:,1:-1] + q[1:-1,1:-1])-(u0[1:-1,1:-1]-u0[:-2,1:-1])*(q[1:-1,1:-1])+q[:-2,1:-1]) \
-	+Dy*((u0[1:-1,2:]-u0[1:-1,1:-1])*(q[1:-1,2:]+q[1:-1,1:-1])-(u0[1:-1,1:-1]-u0[1:-1,:-2])*(q[1:-1,1:-1]+q[1:-1,:-2])) \
-	+v*u0[1:-1,1:-1])
-u1 /= (1+((2-b*dt)/(2+b*dt)))
-#-----Langtangen code
-
-u1[1:-1,1:-1] = u0[1:-1,1:-1] +  \
-0.5*Cx2*(u0[:-2,1:-1] - 2*u0[1:-1,1:-1] + u0[2:,1:-1]) +0.5*Cy2*(u0[1:-1,:-2] - 2*u0[1:-1,1:-1] + u0[1:-1,2:])
-u1[0,1:-1] = u1[1,1:-1] 
-u1[1:-1,0] = u1[1:-1,1] 
-u1[1:-1,n-1] = u1[1:-1,n-2]
-u1[-1,1:-1] = u1[-2,1:-1] 
-'''
-'''
-for j in xrange(1,n-1):
-	for k in xrange(1,n-1):
-		A = dt2*Dx*( (u1[j+1,k]-u1[j,k])*(q[j+1,k]+q[j,k])-(u1[j,k]-u1[j-1,k])*(q[j,k]+q[j-1,k]) );
-		B = dt2*Dy*( (u1[j,k+1]-u1[j,k])*(q[j,k+1]+q[j,k])-(u1[j,k]-u1[j,k-1])*(q[j,k]+q[j,k-1]) );
-		C = v*u1[j,k] - r*u0[j,k];
-		uny[j,k] = A + B + C;
-'''	
+if args.movie and args.rm:
+	cmd = 'xvfb-run --server-args="-screen 0 1024x768x24" python plot_wave.py'
+	failure = os.system(cmd)
+	if failure:
+		print 'Execution of "%s failed\n' %cmd
+	text_files = glob('texttmp*.txt')
+	img_files = glob("wtmp*.png")
+	length_text_files = len(text_files)
+	length_img_files = len(img_files)
+	print "removing files"
+	os.remove('initial.txt');os.remove('u0.txt')
+	for i in xrange(length_img_files):
+		os.remove(img_files[i])
+	for i in xrange(length_text_files):
+		os.remove(text_files[i])

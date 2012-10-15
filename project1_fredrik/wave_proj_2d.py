@@ -10,9 +10,10 @@ from scitools.std import *
 from mayavi import mlab
 
 #--------Initialization---------------
+
 parser = argparse.ArgumentParser()
-parser.add_argument("-s",action="store_true") 
-parser.add_argument("-b",action="store_true")
+parser.add_argument("-s",action="store_true", help="use scalar solver") 
+parser.add_argument("-b",action="store_true", help ="use the basic solver without damping and subsea terrain")
 parser.add_argument("-Lx", type = int, dest="Lx", help="Size of area in x direction")
 parser.add_argument("-Ly", type = int, dest="Ly", help="Size of area in y direction")
 parser.add_argument("-T", type = int, dest="T", help="Number of timesteps")
@@ -20,6 +21,8 @@ parser.add_argument("-Nx", type = int, dest="Nx", help="Number of gridpoints in 
 parser.add_argument("-Ny", type = int, dest="Ny", help="Number of gridpoints i y direction")
 parser.add_argument("-dt", type = float, dest="dt", help="timestep")
 args = parser.parse_args()
+
+oneD = True
 
 Lx = args.Lx if args.Lx != None else 5
 Ly = args.Ly if args.Ly != None else Lx
@@ -46,11 +49,14 @@ q = ones((n,n));
 b = 0.1;	# dampening coefficient
 
 #--------Initial conditions------------
-def initial(x,y):
+def initial(x,y,oneD):
 	"""
 	Returns the initial shape of the wave
 	"""
-	return math.exp(-0.5*(((x-x_0)/(sigma_x))**2+((y-y_0)/(sigma_y))**2))
+	gauss = math.exp(-0.5*(((x-x_0)/(sigma_x))**2+((y-y_0)/(sigma_y))**2))
+	plug = 0 if abs(x-Lx)>1.0 else 1
+	print x
+	return  plug if oneD else gauss
 
 def geography(x,y):
 	a = 1.0; c = 1.0;
@@ -72,13 +78,14 @@ def wall(i,j,q):
 	else:
 		wall = 1
 	return wall;
-	
+if oneD:
+	Y = zeros((n,n))	
 for i in xrange(1,n-1):
 	for j in xrange(1,n-1):
-		u0[i,j] = initial(X[i,j],Y[i,j]);
+		u0[j,i] = initial(X[i,j],Y[i,j],oneD);
 		#q[i,j] = geography(X[i,j],Y[i,j]);
-		V[i,j] = 0.3*u0[i,j]
-
+		V[i,j] = 0.3*u0[i,j] if not oneD else 0
+print u0
 q += abs(q.min())
 q /= q.max()
 
@@ -94,6 +101,7 @@ for i in init:
 	#print i
 outfile.close()
 savetxt('u0.txt',u0)
+
 #print size(X),size(Y), size(u0)
 #--------Various solvers-------------------
 def solve_scalar_reflect(u0,u1,uny,q,h):
@@ -218,7 +226,7 @@ def solve_scalar_simple(u0,u1,uny):
 		u1 = uny.copy();
 		print i
 	return None
-def solve_vectorized(u0,u1,uny,q,T,V):
+def solve_vectorized(u0,u1,uny,q,T,V,oneD):
 	#vectorized (default) version with damping and subsea geometry
 	scale = ((dt*dt)/(1+0.5*b*dt))	
 	Dx = (1./(2*dx*dx))		
@@ -228,6 +236,8 @@ def solve_vectorized(u0,u1,uny,q,T,V):
 	Cx2 = (0.8*dt/dx)**2
 	Cy2 = (0.8*dt/dy)**2
 	dt2 = dt*dt
+	if oneD:
+		Dy = 0;
 	#make the first timestep
 	'''
 	u1[1:-1,1:-1] = (0.5*dt2*Dx*((u0[2:,1:-1]-u0[1:-1,1:-1])*(q[2:,1:-1] + q[1:-1,1:-1])-(u0[1:-1,1:-1]-u0[:-2,1:-1])*(q[1:-1,1:-1])+q[:-2,1:-1]) \
@@ -272,7 +282,7 @@ elif args.b and not args.s:
 elif args.b and args.s:
 	solve_scalar_simple(u0,u1,uny)
 else:
-	solve_vectorized(u0,u1,uny,q,T,V)
+	solve_vectorized(u0,u1,uny,q,T,V,oneD)
 '''
 movie("wtmp*.png")
 
