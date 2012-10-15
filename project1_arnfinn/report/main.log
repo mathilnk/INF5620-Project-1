@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=pdflatex 2012.8.30)  9 OCT 2012 12:41
+This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=pdflatex 2012.8.30)  15 OCT 2012 18:26
 entering extended mode
  %&-line parsing enabled.
 **main.tex
@@ -610,31 +610,52 @@ Overfull \hbox (55.42026pt too wide) in alignment at lines 87--92
 LaTeX Warning: Reference `' on page 3 undefined on input line 3.
 
 
-LaTeX Warning: Reference `' on page 3 undefined on input line 23.
+LaTeX Warning: Reference `' on page 3 undefined on input line 24.
 
 
-Overfull \hbox (54.05817pt too wide) in paragraph at lines 30--30
+Overfull \hbox (54.05817pt too wide) in paragraph at lines 31--31
 [] 
  []
 
 
-Overfull \hbox (1.81117pt too wide) in paragraph at lines 39--39
+Overfull \hbox (1.81117pt too wide) in paragraph at lines 40--40
 [] 
  []
 
-[3]) (./stability_criterion.tex) [4] (./main.aux)
+[3]) (./stability_criterion.tex) (./manufactured_solution.tex
+! Too many }'s.
+l.3 \subsection{Finding f(x,y,t)}}
+                                  
+You've closed more groups than you opened.
+Such booboos are generally harmless, so keep going.
+
+
+Overfull \hbox (40.52248pt too wide) in paragraph at lines 31--31
+[] 
+ []
+
+! Too many }'s.
+l.33  \subsection{Finding I(x,y)}}
+                                  
+You've closed more groups than you opened.
+Such booboos are generally harmless, so keep going.
+
+) [4] (./main.aux)
 
 LaTeX Warning: There were undefined references.
 
+
+LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
+
  ) 
 Here is how much of TeX's memory you used:
- 7835 strings out of 495061
- 109767 string characters out of 1182621
+ 7854 strings out of 495061
+ 110069 string characters out of 1182621
  242918 words of memory out of 3000000
- 10791 multiletter control sequences out of 15000+50000
- 46690 words of font info for 52 fonts, out of 3000000 for 9000
+ 10801 multiletter control sequences out of 15000+50000
+ 49688 words of font info for 53 fonts, out of 3000000 for 9000
  28 hyphenation exceptions out of 8191
- 42i,10n,60p,315b,314s stack positions out of 5000i,500n,10000p,200000b,50000s
+ 42i,16n,60p,315b,314s stack positions out of 5000i,500n,10000p,200000b,50000s
 {/usr/share/texmf/fonts/enc/dvips/lm/lm-ec.enc}{/usr/share/texmf/fonts/enc/dv
 ips/lm/lm-mathsy.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathit.enc}{/usr/s
 hare/texmf/fonts/enc/dvips/lm/lm-rm.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm
@@ -648,9 +669,9 @@ are/texmf/fonts/type1/public/lm/lmr5.pfb></usr/share/texmf/fonts/type1/public/l
 m/lmr7.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy10.pfb></usr/share/texmf
 /fonts/type1/public/lm/lmsy5.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy7.
 pfb>
-Output written on main.pdf (4 pages, 216424 bytes).
+Output written on main.pdf (4 pages, 228097 bytes).
 PDF statistics:
- 128 PDF objects out of 1000 (max. 8388607)
- 28 named destinations out of 1000 (max. 500000)
- 33 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 141 PDF objects out of 1000 (max. 8388607)
+ 34 named destinations out of 1000 (max. 500000)
+ 41 words of extra memory for PDF output out of 10000 (max. 10000000)
 

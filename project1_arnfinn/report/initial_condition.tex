@@ -5,18 +5,19 @@ We can solve this by looking at our initial condition.
 If we assume that the velocity at $t = 0$ is zero, $u'(x,y,0) = 0$ then we get
 
 \begin{equation}
- \frac{\partial u}{\partial t} = 0 \rightarrow [D_t u]_{i,j}^n = 0
+ \frac{\partial u}{\partial t} = 0 \rightarrow [D_t u]_{i,j}^n = V(x,y)
 \end{equation}
 
 \begin{equation}
- \frac{u_{i,j}^{n+1} - u_{i,j}^{n-1}}{2 \Delta t} = 0
+ \frac{u_{i,j}^{n+1} - u_{i,j}^{n-1}}{2 \Delta t} = V(x,y)
 \end{equation}
 
 For $t = 0 \rightarrow n = 0$ we get 
 
 \begin{align}
- \frac{u_{i,j}^{1} - u_{i,j}^{-1}}{2 \Delta t} &= 0 \\
- & u_{i,j}^{1} = u_{i,j}^{-1}
+ \frac{u_{i,j}^{1} - u_{i,j}^{-1}}{2 \Delta t} &= V(x,y) \\
+ & u_{i,j}^{1} = u_{i,j}^{-1} + 2 V(x,y)\Delta t \\
+ & u_{i,j}^{-1} = u_{i,j}^{1} - 2 V(x,y)\Delta t
 \end{align}
 
 
@@ -35,5 +36,5 @@ If we now use $u_{i,j}^{1} = u_{i,j}^{-1}$ we get
   u^{1}_{i,j} =\\
   &\frac{\Delta t^2}{4\Delta x^2} \left( \left( q(x,y)_{i + 1,j}^0+ q(x,y)_{i,j}^0 \right) \left( u_{i+1,j}^0 - u_{i,j}^0 \right) - \left( q(x,y)_{i,j}^0 + q(x,y)_{i - 1,j}^0 \right) \left( u_{i,j}^0 - u_{i-1,j}^0\right) \right) \\
   &+ \frac{\Delta t^2}{4\Delta y^2} \left( \left( q(x,y)_{i,j + 1}^0 + q(x,y)_{i,j}^0 \right) \left( u_{i,j+1}^0 - u_{i,j}^0 \right) - \left( q(x,y)_{i,j}^0 + q(x,y)_{i,j-1}^0 \right) \left( u_{i,j}^0 - u_{i,j-1}^0 \right) \right) \\
-  &+ \frac{\Delta t^2}{2} f(x,y,t)_{i,j}^0 + u^{0}_{i,j} 
+  &+ \frac{\Delta t^2}{2} f(x,y,t)_{i,j}^0 + u^{0}_{i,j} - V(x,y)\Delta t \left(\frac{b\Delta t}{2} - 1 \right)
 \end{align*}

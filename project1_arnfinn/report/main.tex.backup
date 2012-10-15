@@ -9,5 +9,7 @@
 \maketitle
 \input{wave_equation}
 \input{boundary_condition}
+\input{initial_condition}
+\input{stability_criterion}
 %\input{Code}
 \end{document}
