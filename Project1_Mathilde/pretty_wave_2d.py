@@ -4,7 +4,7 @@ from numpy import *
 from mayavi import mlab
 
 V_f_glob = lambda x,y: x*0
-q_f_glob = lambda x,y: ones(shape(x))*0.7
+q_f_glob = lambda x,y: ones(shape(x))*sqrt(2)
 f_f_glob = lambda x,y,t: x*0
 
 
@@ -38,6 +38,7 @@ class wave_2d:
             self.w = 2.0
             self.mx = 5
             self.my = 5
+            self.standing = standing
         else:
             self.I_f = I_f
 
@@ -48,6 +49,7 @@ class wave_2d:
         self.Ny = Ny
         self.dt = dt
         self.b = b
+        self.f_f = f_f
 
 
         self.x = linspace(0,Lx,Nx)
@@ -58,6 +60,7 @@ class wave_2d:
         self.t = linspace(0,T,self.Nt)
 
         self.X1,self.Y1 = meshgrid(linspace(0,Lx,Nx),linspace(0,Ly,Ny))
+
         self.X,self.Y = meshgrid(linspace(0,Lx,Nx+2),linspace(0,Ly,Ny+2))
         X = self.X
         Y = self.Y
@@ -158,10 +161,12 @@ class wave_2d:
 
 
         #vectorized:
-        filename = "num_dt%2.1f.gif"%dt
+        filename_2 = "num_dt%2.1f.gif"%dt
+        if self.standing:
+            filename_2 = "standing_wave_dt%2.1f.gif"%dt
         for filename in glob.glob('wtmp*.png'):
             os.remove(filename)
-        print filename
+        
         for k in xrange(Nt):
             x_para = (q[1:-1,1:-1] + q[2:,1:-1])*(up[2:,1:-1] - up[1:-1,1:-1]) - (q[:-2, 1:-1] + q[1:-1,1:-1])*(up[1:-1,1:-1] - up[:-2,1:-1])
             y_para = (q[1:-1,1:-1] + q[1:-1,2:])*(up[1:-1,2:] - up[1:-1,1:-1]) - (q[1:-1,:-2] + q[1:-1,1:-1])*(up[1:-1,1:-1] - up[1:-1,:-2])
@@ -177,7 +182,7 @@ class wave_2d:
             u[-1,:] = u[-2,:]
             u[:,-1] = u[:,-2]
     
-            if k%5 == 0:
+            if k%3 == 0:
                 
                 s = mlab.mesh(X,Y,u, color=(0.0,0.75,1.0))
                 
@@ -189,7 +194,7 @@ class wave_2d:
 
         
 
-        sci.movie("wtmp*.png",encoder='convert', fps=2, output_file=filename)
+        sci.movie("wtmp*.png",encoder='convert', fps=2, output_file=filename_2)
  
     
         
@@ -241,8 +246,25 @@ class Gauss_wave(wave_2d):
     def __init__(self,dt=0.2,Lx=10.0,Ly=10.0,T=80.0,Nx=30,Ny=30,b=0.0):
         wave_2d.__init__(self,Lx,Ly,T,Nx,Ny,dt,b, I_f = self.gauss)
 
+def plug_I(x,y):
+    I = zeros(shape(x))
+    a = shape(x)
+    dx = a[0]/20.0
+    I[a[0]/2-dx:a[0]/2+dx,:] = I[a[0]/2-dx:a[0]/2+dx,:]+2
+    return I
+    
 
-#w = wave_2d(10,10,80,30,30,0.1,standing=True)
+
+#plug_I(zeros((10,5),float), 8)
+
+#p = wave_2d(10,10,80,30,30,10.0/(29*sqrt(2)),I_f = plug_I)
+#p.solve_num()
+w = wave_2d(10,10,80,30,30,0.1,standing=True)
 #w.make_exact()
-#w.solve_num()
-S = Standing_wave(0.1)
+
+w.solve_num()
+#S = Standing_wave(0.1)
+"""
+def plug_I(x,y):
+    return zeros(shape(x))
+"""
