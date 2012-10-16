@@ -13,7 +13,7 @@ def plog (x,y):
 	#print x
 	for i in range(len(x[0])):
 	    for j in range(len(x[0])):
-	    	I[j,i]=2 if (abs(x[i,j]-Lx/2.0)>sigma) else 0
+	    	I[j,i]=2 if (abs(x[i,j]-Lx/2.0)<sigma) else 0
 
 	return I
 #dx = a[0]/20.0
@@ -252,7 +252,7 @@ elif args.dt != None:
     #dy = args.dt*sqrt(2)
     dt = args.dt
     
-print dt
+#print dt
 #--------Write initial values to file--
 
 init = ["Nx = "+str(Nx),"Lx = "+str(Lx),"Ny = "+str(Ny),"Ly = "+str(Lx)]
