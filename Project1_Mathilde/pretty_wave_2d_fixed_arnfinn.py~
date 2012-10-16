@@ -200,6 +200,7 @@ def plug_I(x,y):
     dx = a[0]/20.0
     I[a[0]/2-dx:a[0]/2+dx,:] = I[a[0]/2-dx:a[0]/2+dx,:]+2
     return I
+    
 
 #--------Initialization---------------
 parser = argparse.ArgumentParser()
