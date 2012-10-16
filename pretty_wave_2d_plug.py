@@ -1,12 +1,14 @@
 import scitools.std as sci
-import glob,os,sys, argparse
+import glob,os,sys, argparse,random
 from numpy import *
 from mayavi import mlab
 
 V_f_glob = lambda x,y: x*0
 q_f_glob = lambda x,y: ones(shape(x))/sqrt(2)
 f_f_glob = lambda x,y,t: x*0
+
 def plog (x,y):
+	"""Returns the initial condition in the shape of a square plug with amplitude 2 """
 	I = zeros(shape(x))
 	a = shape(x)
 	sigma = 0.2
@@ -14,13 +16,25 @@ def plog (x,y):
 	for i in range(len(x[0])):
 	    for j in range(len(x[0])):
 	    	I[j,i]=2 if (abs(x[i,j]-Lx/2.0)<sigma) else 0
-
 	return I
-#dx = a[0]/20.0
-#I[a[0]/2-dx:a[0]/2+dx,:] = I[a[0]/2-dx:a[0]/2+dx,:]+2
+	
+def const(x,y):
+	I = zeros(shape(x))
+	for i in range(len(x[0])):
+	    for j in range(len(x[0])):
+	    	I[i,j]=1.3 
+	return I
+	
+def zero(x,y):
+	I = zeros(shape(x))
+	for i in range(len(x[0])):
+	    for j in range(len(x[0])):
+	    	I[i,j]=0
+	return I
+
 class wave_2d:
 
-    def __init__(self, Lx, Ly, T, Nx, Ny, dt, b = 0,I_f=None, V_f=V_f_glob, q_f=q_f_glob, f_f=f_f_glob,exact=None, gauss=False, standing=False,plug=False):
+    def __init__(self, Lx, Ly, T, Nx, Ny, dt, b = 0,I_f=None, V_f=V_f_glob, q_f=q_f_glob, f_f=f_f_glob,exact=None, gauss=False, standing=False,plug=False,constant =False):
         """
         I_f is the initial state-function, x,y
         V_f is the initial velocity-function, x,y
@@ -32,7 +46,7 @@ class wave_2d:
         self.exact = exact
         self.standing = standing
         self.plug = plug
-        if I_f==None and gauss==False and standing==False and plug==False:
+        if I_f==None and gauss==False and standing==False and plug==False and constant == False:
             print "You failed to give wave properties"
             sys.exit(1)
         elif(gauss):
@@ -52,6 +66,9 @@ class wave_2d:
             self.standing = standing
         elif(plug):
         	self.I_f = plog
+       	elif(constant):
+       		self.I_f = const
+       		self.V_f = zero
         else:
             self.I_f = I_f
             
@@ -88,6 +105,7 @@ class wave_2d:
         self.C_x = dt/self.dx
 
     def gauss_f(self,x,y):
+    	"""Returns a gaussian shaped initial condition """
         sigma_x = 0.15
         sigma_y = 0.15
         x_0 = self.Lx/2.0
@@ -95,6 +113,7 @@ class wave_2d:
         return exp(-(((x-x_0)/(2*sigma_x))**2+((y-y_0)/(2*sigma_y))**2))
 
     def standing_source(self,x,y,t):
+    	"""Returns the source term for a standing wave solution of the equation. """
         w = self.w
         mx = self.mx
         my = self.my
@@ -105,9 +124,11 @@ class wave_2d:
         return (w*b*tan(w*t) - w**2 + q*pi**2*((mx/Ly)**2 + (my/Ly)**2))*self.standing_exact(x,y,t)
     
     def standing_V(self,x,y):
+    	"""Returns the velocity distribution for the standing wave solution. """
         return -self.b*self.standing_exact(x,y,0)
     
     def standing_exact(self,x,y,t=0):
+    	"""Returns the exact solution for the standing wave case at time level t."""
         w = self.w
         mx = self.mx
         my = self.my
@@ -131,6 +152,20 @@ class wave_2d:
         mlab.mesh(self.X1,self.Y1,u_exact[1:-1,1:-1])
         mlab.savefig("u_exact.png")
         savetxt("u_exact.txt",u_exact[1:-1,1:-1])
+    '''   
+    def rain(self,i):
+    	"""Returns the source term which gives small raindroplets every 25th timestep """
+		f = zeros((n,n))
+		if (i+1)%25 == 0:
+			x0 = random.randint(1,Lx-1)
+			y0 = random.randint(1,Ly-1)
+			sigma_x = random.uniform(0.05,0.15)
+			sigma_y = sigma_x
+			for o in xrange(1,n-1):
+				for p in xrange(1,n-1):
+					f[o,p] = 5*self.I_f(self.X[o,p],self.Y[o,p],x0,y0,sigma_x,sigma_y);
+		return f 
+	'''				
 
     def solve_num(self):
         Nx = self.Nx
@@ -233,8 +268,9 @@ parser.add_argument("-T", type = int, dest="T", help="Number of timesteps")
 parser.add_argument("-Nx", type = int, dest="Nx", help="Number of gridpoints in x direction")
 parser.add_argument("-Ny", type = int, dest="Ny", help="Number of gridpoints i y direction")
 parser.add_argument("-dt", type = float, dest="dt", help="timestep")
-parser.add_argument("-movie", action="store_true") 
-parser.add_argument("-rm", action="store_true")
+parser.add_argument("-movie", action="store_true",help="") 
+parser.add_argument("-remove", action="store_true",help="remove the picture and text files produced from plotting")
+parser.add_argument("-constant", action="store_true",help="verify that the program can produce a constant solution")
 args = parser.parse_args()
 
 b = args.b if args.b != None else 0.0
@@ -263,18 +299,18 @@ outfile.close()
 
 #--------END Write initial values to file--
 
-w = wave_2d(Ly,Lx,T,Nx,Ny,dt,b,standing=args.standing,gauss=args.gauss,plug=args.plug)
+w = wave_2d(Ly,Lx,T,Nx,Ny,dt,b,standing=args.standing,gauss=args.gauss,plug=args.plug,constant = args.constant)
 #w.plot_exact()
 w.solve_num()
 
-if args.movie and not args.rm:
+if args.movie and not args.remove:
 	#must install xvfb to run this
 	cmd = 'xvfb-run --server-args="-screen 0 1024x768x24" python plot_wave.py'
 	failure = os.system(cmd)
 	if failure:
 		print 'Execution of "%s failed\n' %cmd
 
-if args.movie and args.rm:
+if args.movie and args.remove:
 	cmd = 'xvfb-run --server-args="-screen 0 1024x768x24" python plot_wave.py'
 	failure = os.system(cmd)
 	if failure:
@@ -290,7 +326,7 @@ if args.movie and args.rm:
 	for i in xrange(length_text_files):
 		os.remove(text_files[i])
 
-if args.rm and not args.movie:
+if args.remove and not args.movie:
     text_files = glob.glob('texttmp*.txt')
     img_files = glob.glob("wtmp*.png")
     length_text_files = len(text_files)
